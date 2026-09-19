@@ -1,0 +1,1215 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<title>Накладные ЭТрН</title>
+<meta name="description" content="Демо платформы заполнения электронных транспортных накладных">
+<style>
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #181c22;
+  --muted: #667085;
+  --line: #e3e6eb;
+  --line-strong: #cfd4dc;
+  --accent: #1f5fd6;
+  --accent-soft: #eaf1fe;
+  --need: #fff6e0;
+  --need-line: #f0b429;
+  --auto: #f0f4f9;
+  --ok: #138a52;
+  --ok-soft: #e7f6ee;
+  --err: #c8321f;
+  --err-soft: #fdecea;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.45; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 22px; margin: 0; }
+h2 { font-size: 17px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.error { color: var(--err); }
+
+/* шапка */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 10px; color: var(--ink); }
+.brand:hover { text-decoration: none; }
+.logo { font-weight: 800; letter-spacing: .5px; font-size: 18px; }
+.brand-sub { color: var(--muted); font-size: 13px; }
+.top-nav { display: flex; align-items: center; gap: 16px; }
+.top-nav form { margin: 0; }
+
+/* кнопки */
+.btn { font: inherit; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: #194fb3; }
+.btn.warn { background: var(--need); border-color: var(--need-line); color: #7a4d00; }
+.link { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.link.danger { color: var(--err); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* список */
+.page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.narrow { max-width: 380px; margin: 60px auto; padding: 0 16px; }
+.login { padding: 24px; display: grid; gap: 14px; }
+.page-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.page-head h1 { margin-right: auto; }
+.page-head form { margin: 0; }
+.search input { width: 320px; }
+table.list { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.list th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 10px 12px;
+  border-bottom: 1px solid var(--line); background: #fafbfc; }
+.list td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.list tr:last-child td { border-bottom: 0; }
+.list .num { font-weight: 700; }
+.list .actions { display: flex; gap: 12px; justify-content: flex-end; }
+.list .actions form { margin: 0; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; width: 90px; display: inline-block;
+  vertical-align: middle; margin-right: 6px; }
+.bar i { display: block; height: 100%; background: var(--ok); }
+.bar.big { width: 100%; height: 8px; margin: 8px 0 6px; }
+.chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.s-draft { background: var(--need); color: #7a4d00; }
+.s-ready { background: var(--ok-soft); color: var(--ok); }
+.s-sent { background: var(--accent-soft); color: var(--accent); }
+.empty-state { padding: 36px; text-align: center; }
+.empty-state p { color: var(--muted); max-width: 520px; margin: 8px auto 0; }
+
+/* поля */
+input, select, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong);
+  border-radius: 7px; padding: 7px 9px; width: 100%; min-width: 0; }
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+input::placeholder { color: #98a2b3; }
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field .lbl { font-size: 12px; font-weight: 600; color: #344054; }
+.field .hint { font-size: 11.5px; color: var(--muted); }
+.field .msg { font-size: 11.5px; color: var(--err); font-weight: 600; }
+.field .msg:empty, .field .hint:empty { display: none; }
+.field.check { flex-direction: row; align-items: center; gap: 8px; }
+.field.check input { width: auto; }
+.field.check .lbl { font-weight: 500; font-size: 13px; }
+
+/* главное поле, пока пустое: подсвечено */
+.field.t-main .lbl::after { content: " •"; color: var(--need-line); }
+.field.t-main.is-empty input, .field.t-main.is-empty select { background: var(--need); border-color: var(--need-line); }
+.field.t-main.is-done .lbl::after { content: " ✓"; color: var(--ok); }
+.field.err input, .field.err select { background: var(--err-soft); border-color: var(--err); }
+.field.flash input { animation: flash 1.2s ease; }
+@keyframes flash { 0%, 40% { box-shadow: 0 0 0 4px rgba(31, 95, 214, .35); } 100% { box-shadow: none; } }
+.field .found { font-size: 11.5px; color: var(--ok); font-weight: 600; }
+
+/* редактор */
+.editor-page .top { position: sticky; top: 0; z-index: 5; }
+.ed-bar { position: sticky; top: 49px; z-index: 4; display: flex; align-items: center; gap: 18px;
+  padding: 10px 24px; background: rgba(245, 246, 248, .95); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+.ed-title { margin-right: auto; font-size: 15px; }
+.save-state { font-size: 12.5px; color: var(--ok); font-weight: 600; }
+.save-state.pending { color: var(--muted); }
+.save-state.fail { color: var(--err); }
+.ed-actions { display: flex; gap: 8px; }
+.ed-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; max-width: 1240px;
+  margin: 0 auto; padding: 20px 24px 80px; }
+.ed-nav { position: sticky; top: 120px; align-self: start; }
+.progress-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow); }
+.progress-num { font-weight: 700; font-size: 15px; }
+#nav { list-style: none; margin: 14px 0; padding: 0; display: grid; gap: 2px; }
+#nav a { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; border-radius: 7px;
+  color: var(--ink); }
+#nav a:hover { background: var(--surface); text-decoration: none; }
+#nav .cnt { font-size: 11.5px; font-weight: 700; color: #7a4d00; background: var(--need); border-radius: 10px; padding: 1px 7px; }
+#nav .cnt.bad { color: var(--err); background: var(--err-soft); }
+#nav .cnt.ok { color: var(--ok); background: transparent; }
+.legend { display: grid; gap: 6px; color: var(--muted); padding: 0 4px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px;
+  border: 1px solid var(--line-strong); }
+.sw-need { background: var(--need); border-color: var(--need-line); }
+.sw-auto { background: var(--auto); }
+.sw-extra { background: var(--surface); }
+
+.ed-form { display: grid; gap: 16px; }
+.sec { padding: 18px 20px; scroll-margin-top: 130px; }
+.sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sec-head h2 { margin: 0; }
+.sec-head .state { font-size: 12px; font-weight: 600; }
+.sec-head .state.ok { color: var(--ok); }
+.sec-head .state.need { color: #7a4d00; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px 14px; }
+.grid .wide { grid-column: 1 / -1; }
+.item { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+.item-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600; color: var(--muted);
+  font-size: 12px; }
+.fold { margin-top: 12px; border-radius: 8px; }
+.fold > summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 6px 10px; border-radius: 7px;
+  list-style: none; display: flex; gap: 8px; align-items: baseline; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: "▸"; }
+.fold[open] > summary::before { content: "▾"; }
+.fold > summary b { color: #344054; font-weight: 600; white-space: nowrap; }
+.fold > summary .sum { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fold.auto { background: var(--auto); }
+.fold.auto[open] { padding-bottom: 12px; }
+.fold .grid { padding: 8px 10px 0; }
+.add { margin-top: 4px; }
+
+/* подсказки */
+.dd { position: absolute; top: 100%; left: 0; right: 0; z-index: 20; margin-top: 2px; background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
+  max-height: 280px; overflow: auto; }
+.dd div { padding: 7px 10px; cursor: pointer; }
+.dd div small { display: block; color: var(--muted); }
+.dd div.on, .dd div:hover { background: var(--accent-soft); }
+
+.toast { position: fixed; right: 24px; bottom: 24px; max-width: 420px; background: var(--ink); color: #fff;
+  padding: 12px 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); z-index: 50; }
+
+@media (max-width: 900px) {
+  .ed-wrap { grid-template-columns: 1fr; }
+  .ed-nav { position: static; }
+  .ed-bar { flex-wrap: wrap; top: 0; }
+  .search input { width: 100%; }
+  .page-head { flex-wrap: wrap; }
+}
+
+.sec-note { margin: -4px 0 12px; max-width: 640px; }
+
+.radios { display: flex; flex-wrap: wrap; gap: 6px; }
+.radio { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line-strong);
+  border-radius: 8px; cursor: pointer; font-size: 13px; background: var(--surface); }
+.radio input { width: auto; margin: 0; }
+.radio.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.org-card { grid-column: 1 / -1; background: #f7f8fa; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  display: grid; gap: 4px; }
+.org-name { font-weight: 700; display: flex; gap: 12px; align-items: baseline; }
+.org-row { display: grid; grid-template-columns: 70px 1fr; gap: 8px; font-size: 13px; }
+.empty-org { background: var(--need); border-color: var(--need-line); }
+.empty-org .btn { justify-self: start; margin-top: 6px; }
+.settings { max-width: 640px; padding: 22px; display: grid; gap: 14px; }
+.settings .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ok-msg { color: var(--ok); font-weight: 600; }
+
+.item-actions { display: flex; gap: 14px; }
+.lbl .now { margin-left: 8px; font-weight: 500; }
+
+/* чистый вид: без галочек у каждого поля, подсказка — только в активном поле */
+.field.t-main .lbl::after, .field.t-main.is-done .lbl::after { content: none; }
+.field .hint { display: none; }
+.field:focus-within .hint { display: block; }
+.fold > summary { color: var(--muted); font-size: 12.5px; padding: 4px 2px; }
+.fold.auto { background: transparent; }
+.fold .grid { padding: 8px 0 0; }
+.sec-head .state.need { background: var(--need); color: #7a4d00; border-radius: 10px; padding: 1px 8px; }
+.sec { padding: 20px 24px; }
+.sec-head { margin-bottom: 14px; }
+.item { border-style: solid; border-color: var(--line); }
+.item-head { min-height: 0; }
+.item-head:has(span:empty):not(:has(button)) { display: none; }
+.lbl .now { float: right; }
+.ed-wrap { overflow-x: clip; }
+.progress-num { font-size: 14px; }
+.back { font-size: 18px; color: var(--ink); }
+
+/* раскладка как в Контуре: подпись слева, поле справа, одно поле в строке, подзаголовки групп */
+.ed-wrap { max-width: 1180px; }
+.grid { display: block; }
+.field { display: grid; grid-template-columns: 250px minmax(0, 490px); column-gap: 24px; row-gap: 4px;
+  align-items: start; margin-bottom: 14px; }
+.field > .lbl { grid-column: 1; padding-top: 8px; font-size: 14px; font-weight: 400; color: var(--ink); }
+.field > input, .field > select, .field > .radios, .field > .dd { grid-column: 2; }
+.field > .hint, .field > .msg, .field > .found { grid-column: 2; }
+.field.short > input, .field.short > select { max-width: 200px; }
+.field.check { display: flex; margin-left: 274px; }
+.field.check .lbl { padding-top: 0; }
+.field.t-main:not(.t-opt) > .lbl::after { content: " *"; color: var(--err); }
+.lbl .now { float: none; display: block; margin: 2px 0 0; }
+.radios { flex-direction: column; gap: 8px; padding-top: 8px; }
+.radio, .radio.on { border: 0; padding: 0; background: none; font-size: 14px; font-weight: 400; }
+.radio input { accent-color: var(--ink); width: 16px; height: 16px; }
+h3.grp { font-size: 16px; margin: 22px 0 14px; font-weight: 700; }
+.grid > h3.grp:first-child { margin-top: 4px; }
+.sec { padding: 28px 40px; }
+.sec-head h2 { font-size: 20px; font-weight: 500; }
+.sec-head { margin-bottom: 22px; }
+.org-card { max-width: 764px; margin-bottom: 14px; }
+.dd { top: auto; margin-top: 38px; left: 274px; right: auto; width: 490px; }
+.item { padding: 18px 20px; }
+@media (max-width: 900px) {
+  .field { grid-template-columns: 1fr; } .field > * { grid-column: 1 !important; }
+  .field.check { margin-left: 0; } .dd { left: 0; width: auto; right: 0; } .sec { padding: 18px; }
+}
+
+/* строка формы: подпись | одно или несколько полей в ряд («№ … от …», «ИНН – КПП») */
+.frow { display: grid; grid-template-columns: 250px minmax(0, 1fr); column-gap: 24px; align-items: start; margin-bottom: 14px; }
+.frow > .lbl { padding-top: 8px; font-size: 14px; color: var(--ink); }
+.frow > .lbl.req::after { content: " *"; color: var(--err); }
+.ctl { display: flex; gap: 10px; align-items: flex-start; max-width: 560px; flex-wrap: wrap; }
+.ctl .sep { padding-top: 8px; color: var(--muted); }
+.field.cell { display: block; margin: 0; flex: 1 1 140px; min-width: 0; position: relative; }
+.field.cell.short { flex: 0 0 170px; }
+.field.cell.short > input, .field.cell.short > select { max-width: none; }
+.field.cell.wide, .field.cell:only-child:not(.short) { flex: 1 1 100%; }
+.field.cell > .msg, .field.cell > .hint, .field.cell > .found { display: block; margin-top: 3px; }
+.field.cell > .hint { display: none; } .field.cell:focus-within > .hint:not(:empty) { display: block; }
+.field.cell > .msg:empty { display: none; }
+.field.cell .now { display: inline-block; margin: 6px 0 0; }
+.field.cell.check { margin-left: 0; display: block; padding-top: 6px; }
+.chk { display: flex; gap: 8px; align-items: center; cursor: pointer; font-size: 14px; }
+.chk input { width: 16px; height: 16px; accent-color: var(--ink); }
+.field.cell .radios { padding-top: 8px; }
+.dd { left: 0; right: 0; width: auto; margin-top: 2px; top: 36px; }
+@media (max-width: 900px) { .frow { grid-template-columns: 1fr; } }
+.field.cell:has(> .now) { display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; flex: 1 1 100%; }
+.field.cell:has(> .now) > input { width: 230px; }
+.field.cell:has(> .now) > .now { margin: 0; }
+.field.cell:has(> .now) > .msg, .field.cell:has(> .now) > .hint { flex-basis: 100%; }
+.ctl > .field.cell.short:has(> .now) { flex: 1 1 100%; display: flex; flex-wrap: wrap; justify-content: flex-start;
+  align-items: center; column-gap: 14px; text-align: left; }
+.ctl > .field.cell.short:has(> .now) > input { width: 230px; flex: 0 0 230px; }
+.ctl > .field.cell.short:has(> .now) > .now { display: inline; margin: 0; flex: 0 0 auto; }
+.field.cell.is-empty.t-main > input, .field.cell.is-empty.t-main > select { background: var(--need); border-color: var(--need-line); }
+.ctl > .field.cell.short:has(> .now) { flex-direction: row; }
+.frow { grid-template-columns: 280px minmax(0, 1fr); }
+
+/* список */
+.page { max-width: 1320px; }
+.list td { padding: 12px 14px; font-size: 14px; }
+.list th { padding: 10px 14px; text-transform: none; }
+.list tbody tr { cursor: pointer; }
+.list tbody tr:hover { background: #fafbfc; }
+.list .num { font-weight: 700; }
+.nowrap { white-space: nowrap; }
+.btn.sm { padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
+.btn.ghost { border-color: transparent; color: var(--muted); background: none; }
+.btn.ghost:hover { color: var(--err); }
+.list .actions { white-space: nowrap; display: table-cell; text-align: right; }
+.list .actions form { display: inline-block; margin-left: 4px; }
+.dir-h { margin: 26px 0 10px; font-size: 16px; }
+.search input { width: 260px; }
+.chip { white-space: nowrap; }
+.settings { max-width: 900px; display: block; }
+.settings .msg { display: block; color: var(--muted); font-weight: 400; }
+
+
+body { background: var(--bg); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; flex-wrap: wrap; }
+.top-nav a { color: var(--muted); }
+.top-nav a.on { color: var(--ink); font-weight: 600; }
+.demo-note { background: #eef3fb; color: #2b4a7a; font-size: 12.5px; padding: 7px 24px; display: flex; gap: 12px;
+  align-items: center; justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid #dbe4f3; }
+.demo-note .link { font-size: 12.5px; }
+.editor-page .ed-bar { top: calc(49px + env(safe-area-inset-top, 0px)); }
+.scroll-x { overflow-x: auto; border-radius: var(--radius); }
+.list.plain tbody tr { cursor: default; }
+.dir-note { margin: -8px 0 8px; }
+.org-actions { display: flex; gap: 14px; align-items: center; margin-left: 304px; }
+.modal { position: fixed; inset: 0; background: rgba(20, 26, 36, .45); display: grid; place-items: center; z-index: 60; padding: 16px; }
+.modal-box { background: var(--surface); border-radius: 12px; width: min(920px, 100%); max-height: 86vh; display: flex;
+  flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px;
+  border-bottom: 1px solid var(--line); }
+.modal-head b { font-size: 15px; } .modal-head p { margin: 2px 0 0; }
+.modal pre { margin: 0; padding: 16px 20px; overflow: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #24324a; background: #f8fafc; border-radius: 0 0 12px 12px; white-space: pre; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 900px) { .org-actions { margin-left: 0; } .page { padding: 16px; } .demo-note { padding: 7px 16px; }
+  .top { padding: 10px 16px; } .page-head { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; scroll-behavior: auto !important; } }
+
+</style>
+<header class="top">
+  <a class="brand" href="#/"><span class="logo">ЭТрН</span></a>
+  <nav class="top-nav">
+    <a href="#/" data-v="list">Накладные</a>
+    <a href="#/dir" data-v="dir">Справочники</a>
+    <a href="#/org" data-v="org">Моя организация</a>
+  </nav>
+</header>
+<div class="demo-note">
+  <span>Демо-версия: данные вымышленные, ничего никуда не отправляется. Изменения хранятся только в этом браузере.</span>
+  <button class="link" id="reset-demo" type="button">Вернуть примеры</button>
+</div>
+<div id="app"></div>
+<div class="toast" id="toast" hidden></div>
+<div class="modal" id="xml-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="xml-title">
+    <div class="modal-head"><div><b id="xml-title">XML титула Т1 для оператора ЭДО</b>
+      <p class="muted small">Формат ФНС 5.01, проходит официальную проверку. В демо показан файл примера.</p></div>
+      <button class="btn sm" id="xml-close" type="button">Закрыть</button></div>
+    <pre id="xml-pre"></pre>
+  </div>
+</div>
+<script>
+const SPEC = [{"id": "doc", "title": "Общие данные", "fields": [{"path": "number", "row": "Транспортная накладная", "ph": "Номер", "label": "Номер накладной", "type": "text", "tier": "main"}, {"path": "date", "join": "от", "short": true, "label": "Дата накладной", "type": "date", "tier": "main"}, {"path": "order.number", "row": "Заказ/заявка", "optional": true, "label": "Номер заявки", "type": "text", "tier": "main", "default": "Без номера"}, {"path": "order.date", "join": "от", "short": true, "label": "Дата заявки", "type": "date", "tier": "main", "optional": true}, {"path": "tz", "label": "Часовой пояс времени погрузки", "type": "select", "tier": "hidden", "options": [["+02:00", "UTC+2 (Калининград)"], ["+03:00", "UTC+3 (Москва)"], ["+04:00", "UTC+4 (Самара)"], ["+05:00", "UTC+5 (Екатеринбург)"], ["+06:00", "UTC+6 (Омск)"], ["+07:00", "UTC+7 (Новосибирск, Красноярск)"], ["+08:00", "UTC+8 (Иркутск)"], ["+09:00", "UTC+9 (Якутск, Благовещенск)"], ["+10:00", "UTC+10 (Владивосток)"], ["+11:00", "UTC+11 (Магадан)"], ["+12:00", "UTC+12 (Камчатка)"]], "default": "+03:00"}]}, {"id": "shipper", "title": "Грузоотправитель", "fields": [{"path": "shipper_mode", "label": "Кто отправляет груз", "type": "radio", "tier": "main", "options": [["mine", "Моя организация"], ["other", "Другая организация"]], "default": "other"}, {"path": "shipper_card", "label": "Моя организация", "type": "org_card", "tier": "main", "optional": true, "show_if": {"shipper_mode": "mine"}}, {"path": "shipper.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": null, "show_if": {"shipper_mode": "other"}}, {"path": "shipper.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"shipper.kind": "ul", "shipper_mode": "other"}, "group": null}, {"path": "shipper.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "shipper", "type": "inn", "tier": "main", "group": null, "show_if": {"shipper_mode": "other"}}, {"path": "shipper.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"shipper.kind": "ul", "shipper_mode": "other"}, "group": null}, {"path": "shipper.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"shipper.kind": ["ip", "fl"], "shipper_mode": "other"}, "group": null}, {"path": "shipper.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"shipper.kind": ["ip", "fl"], "shipper_mode": "other"}, "group": null}, {"path": "shipper.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"shipper.kind": ["ip", "fl"], "shipper_mode": "other"}, "group": null}, {"path": "shipper.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"shipper_mode": "other"}}, {"path": "shipper.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"shipper_mode": "other"}}, {"path": "shipper_forwarder", "label": "Грузоотправитель — экспедитор", "type": "checkbox", "tier": "main", "optional": true, "default": false}, {"path": "customer.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": "Заказчик", "show_if": {"shipper_forwarder": true}}, {"path": "customer.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"customer.kind": "ul", "shipper_forwarder": true}, "group": "Заказчик"}, {"path": "customer.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "customer", "type": "inn", "tier": "main", "group": "Заказчик", "show_if": {"shipper_forwarder": true}}, {"path": "customer.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"customer.kind": "ul", "shipper_forwarder": true}, "group": "Заказчик"}, {"path": "customer.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"customer.kind": ["ip", "fl"], "shipper_forwarder": true}, "group": "Заказчик"}, {"path": "customer.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"customer.kind": ["ip", "fl"], "shipper_forwarder": true}, "group": "Заказчик"}, {"path": "customer.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"customer.kind": ["ip", "fl"], "shipper_forwarder": true}, "group": "Заказчик"}, {"path": "customer.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"shipper_forwarder": true}}, {"path": "customer.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"shipper_forwarder": true}}, {"path": "customer_contract.name", "label": "Договор с заказчиком: название", "type": "text", "tier": "main", "default": "Договор транспортной экспедиции", "show_if": {"shipper_forwarder": true}}, {"path": "customer_contract.number", "row": "Договор: номер и дата", "ph": "Номер", "label": "Договор: номер", "type": "text", "tier": "main", "show_if": {"shipper_forwarder": true}}, {"path": "customer_contract.date", "join": "от", "short": true, "label": "Договор: дата", "type": "date", "tier": "main", "show_if": {"shipper_forwarder": true}}]}, {"id": "consignee", "title": "Грузополучатель", "fields": [{"path": "consignee_mode", "label": "Кто получает груз", "type": "radio", "tier": "main", "options": [["mine", "Моя организация"], ["other", "Другая организация"]], "default": "other"}, {"path": "consignee_card", "label": "Моя организация", "type": "org_card", "tier": "main", "optional": true, "show_if": {"consignee_mode": "mine"}}, {"path": "consignee.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": null, "show_if": {"consignee_mode": "other"}}, {"path": "consignee.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"consignee.kind": "ul", "consignee_mode": "other"}, "group": null}, {"path": "consignee.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "consignee", "type": "inn", "tier": "main", "group": null, "show_if": {"consignee_mode": "other"}}, {"path": "consignee.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"consignee.kind": "ul", "consignee_mode": "other"}, "group": null}, {"path": "consignee.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"consignee.kind": ["ip", "fl"], "consignee_mode": "other"}, "group": null}, {"path": "consignee.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"consignee.kind": ["ip", "fl"], "consignee_mode": "other"}, "group": null}, {"path": "consignee.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"consignee.kind": ["ip", "fl"], "consignee_mode": "other"}, "group": null}, {"path": "consignee.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"consignee_mode": "other"}}, {"path": "consignee.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"consignee_mode": "other"}}, {"path": "delivery.type", "label": "Тип", "group": "Адрес доставки", "type": "radio", "tier": "main", "options": [["ru", "Российский"], ["foreign", "Иностранный"]], "default": "ru"}, {"path": "delivery.index", "label": "Индекс", "type": "postcode", "tier": "main", "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.region", "label": "Регион", "type": "select", "tier": "main", "show_if": {"delivery.type": "ru"}, "options": [["", "— выберите регион —"], ["22", "Алтайский край"], ["28", "Амурская область"], ["29", "Архангельская область"], ["30", "Астраханская область"], ["31", "Белгородская область"], ["32", "Брянская область"], ["33", "Владимирская область"], ["34", "Волгоградская область"], ["35", "Вологодская область"], ["36", "Воронежская область"], ["93", "Донецкая Народная Республика"], ["79", "Еврейская автономная область"], ["75", "Забайкальский край"], ["90", "Запорожская область"], ["37", "Ивановская область"], ["99", "Иные территории, включая город и космодром Байконур"], ["38", "Иркутская область"], ["07", "Кабардино-Балкарская Республика"], ["39", "Калининградская область"], ["40", "Калужская область"], ["41", "Камчатский край"], ["09", "Карачаево-Черкесская Республика"], ["42", "Кемеровская область - Кузбасс"], ["43", "Кировская область"], ["44", "Костромская область"], ["23", "Краснодарский край"], ["24", "Красноярский край"], ["45", "Курганская область"], ["46", "Курская область"], ["47", "Ленинградская область"], ["48", "Липецкая область"], ["94", "Луганская Народная Республика"], ["49", "Магаданская область"], ["77", "г. Москва"], ["50", "Московская область"], ["51", "Мурманская область"], ["83", "Ненецкий автономный округ"], ["52", "Нижегородская область"], ["53", "Новгородская область"], ["54", "Новосибирская область"], ["55", "Омская область"], ["56", "Оренбургская область"], ["57", "Орловская область"], ["58", "Пензенская область"], ["59", "Пермский край"], ["25", "Приморский край"], ["60", "Псковская область"], ["01", "Республика Адыгея (Адыгея)"], ["04", "Республика Алтай"], ["02", "Республика Башкортостан"], ["03", "Республика Бурятия"], ["05", "Республика Дагестан"], ["06", "Республика Ингушетия"], ["08", "Республика Калмыкия"], ["10", "Республика Карелия"], ["11", "Республика Коми"], ["91", "Республика Крым"], ["12", "Республика Марий Эл"], ["13", "Республика Мордовия"], ["14", "Республика Саха (Якутия)"], ["15", "Республика Северная Осетия - Алания"], ["16", "Республика Татарстан (Татарстан)"], ["17", "Республика Тыва"], ["19", "Республика Хакасия"], ["61", "Ростовская область"], ["62", "Рязанская область"], ["63", "Самарская область"], ["78", "г. Санкт-Петербург"], ["64", "Саратовская область"], ["65", "Сахалинская область"], ["66", "Свердловская область"], ["92", "г. Севастополь"], ["67", "Смоленская область"], ["26", "Ставропольский край"], ["68", "Тамбовская область"], ["69", "Тверская область"], ["70", "Томская область"], ["71", "Тульская область"], ["72", "Тюменская область"], ["18", "Удмуртская Республика"], ["73", "Ульяновская область"], ["27", "Хабаровский край"], ["86", "Ханты-Мансийский автономный округ - Югра"], ["95", "Херсонская область"], ["74", "Челябинская область"], ["20", "Чеченская Республика"], ["21", "Чувашская Республика - Чувашия"], ["87", "Чукотский автономный округ"], ["89", "Ямало-Ненецкий автономный округ"], ["76", "Ярославская область"]], "group": "Адрес доставки"}, {"path": "delivery.district", "label": "Район", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.city", "label": "Город", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.locality", "label": "Населённый пункт", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.street", "label": "Улица", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.house", "row": "Дом, корпус, квартира", "ph": "Дом", "label": "Дом", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.building", "join": "", "ph": "Корпус", "label": "Корпус / строение", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.flat", "join": "", "ph": "Квартира", "label": "Квартира / офис", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"delivery.type": "ru"}, "group": "Адрес доставки"}, {"path": "delivery.country", "label": "Страна", "type": "select", "tier": "main", "options": [["", "— выберите страну —"], ["112", "Беларусь"], ["398", "Казахстан"], ["156", "Китай"], ["417", "Киргизия"], ["051", "Армения"], ["860", "Узбекистан"], ["762", "Таджикистан"], ["496", "Монголия"], ["031", "Азербайджан"], ["268", "Грузия"], ["792", "Турция"]], "show_if": {"delivery.type": "foreign"}, "group": "Адрес доставки"}, {"path": "delivery.text", "label": "Адрес", "type": "text", "tier": "main", "wide": true, "maxlen": 1000, "show_if": {"delivery.type": "foreign"}, "group": "Адрес доставки"}, {"path": "delivery.comment", "label": "Комментарий к адресу", "type": "text", "tier": "main", "optional": true, "wide": true, "maxlen": 2000, "group": "Адрес доставки"}]}, {"id": "cargo", "item": "Груз", "title": "Сведения о грузах", "repeat": "cargo", "add_label": "Добавить груз", "fields": [{"path": "cargo[].name", "group": "Основные сведения", "label": "Наименование груза", "type": "text", "tier": "main"}, {"path": "cargo[].places", "group": "Основные сведения", "label": "Количество грузовых мест, шт", "type": "int", "tier": "main"}, {"path": "cargo[].packing", "group": "Основные сведения", "label": "Упаковка", "type": "select", "tier": "main", "options": [["PX", "Паллеты (поддоны)"], ["CT", "Картонные коробки"], ["BX", "Коробки"], ["CS", "Ящики"], ["BG", "Мешки"], ["JB", "Биг-бэги"], ["BA", "Бочки"], ["RO", "Рулоны"], ["BE", "Пачки / связки"], ["PK", "Упаковка"], ["NE", "Без упаковки (штучный груз)"], ["VR", "Насыпью"], ["VL", "Наливом"], ["00", "Без тары"]], "default": "PX"}, {"path": "cargo[].net", "group": "Масса", "label": "Масса нетто, кг", "type": "number", "tier": "main", "optional": true}, {"path": "cargo[].weight", "group": "Масса", "label": "Масса брутто, кг", "type": "number", "tier": "main"}, {"path": "cargo[].pallets", "group": "Масса", "label": "Количество паллет, шт", "type": "int", "tier": "main", "optional": true}, {"path": "cargo[].length", "row": "Длина, ширина, высота, м", "ph": "Длина", "group": "Габариты", "label": "Длина, м", "type": "number", "tier": "main", "optional": true, "hint": "Габариты — для крупногабаритного груза, все три"}, {"path": "cargo[].width", "join": "", "ph": "Ширина", "group": "Габариты", "label": "Ширина, м", "type": "number", "tier": "main", "optional": true}, {"path": "cargo[].height", "join": "", "ph": "Высота", "group": "Габариты", "label": "Высота, м", "type": "number", "tier": "main", "optional": true}, {"path": "cargo[].volume", "group": "Габариты", "label": "Объём, м³", "type": "number", "tier": "main", "optional": true}, {"path": "cargo[].value", "group": "Ценность", "label": "Ценность, ₽", "type": "number", "tier": "main", "optional": true}, {"path": "cargo[].containers", "group": "Сведения о контейнерах", "label": "Номера контейнеров", "type": "text", "tier": "extra"}, {"path": "cargo[].cust_inn", "group": "Сведения о заказчике", "label": "Заказчик груза: ИНН", "type": "inn", "tier": "extra"}, {"path": "cargo[].cust_name", "group": "Сведения о заказчике", "label": "Заказчик груза: название", "type": "text", "tier": "extra"}, {"path": "cargo[].gov", "group": "Учёт в госсистеме", "label": "Учёт в госсистеме (ЕГАИС)", "type": "checkbox", "tier": "extra"}, {"path": "cargo[].gov_name", "group": "Учёт в госсистеме", "label": "Госсистема", "type": "text", "tier": "main", "default": "ЕГАИС", "show_if": {"cargo[].gov": true}}, {"path": "cargo[].gov_ids", "group": "Учёт в госсистеме", "label": "Номера учётных единиц", "type": "text", "tier": "main", "wide": true, "show_if": {"cargo[].gov": true}}, {"path": "cargo[].danger", "group": "Опасный груз", "label": "Опасный груз (ДОПОГ)", "type": "checkbox", "tier": "extra"}, {"path": "cargo[].un", "group": "Опасный груз", "label": "Номер ООН", "type": "text", "tier": "main", "maxlen": 50, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_name", "group": "Опасный груз", "label": "Надлежащее отгрузочное наименование", "type": "text", "tier": "main", "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_class", "group": "Опасный груз", "label": "Класс", "type": "text", "tier": "main", "maxlen": 3, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_code", "group": "Опасный груз", "label": "Классификационный код", "type": "text", "tier": "main", "maxlen": 50, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_group", "group": "Опасный груз", "label": "Группа упаковки", "type": "text", "tier": "main", "maxlen": 50, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_sign", "group": "Опасный груз", "label": "Знак опасности", "type": "text", "tier": "main", "maxlen": 50, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].un_tunnel", "group": "Опасный груз", "label": "Код ограничения проезда через туннели", "type": "text", "tier": "main", "maxlen": 50, "show_if": {"cargo[].danger": true}}, {"path": "cargo[].state", "label": "Состояние груза", "type": "text", "tier": "auto", "default": "Без повреждений"}, {"path": "cargo[].marking", "label": "Маркировка", "type": "text", "tier": "auto", "default": "Отсутствует"}, {"path": "cargo[].packing_text", "label": "Способ упаковки", "type": "text", "tier": "auto"}, {"path": "cargo[].hs_code", "group": "Дополнительно", "label": "Код ТН ВЭД (4 знака)", "type": "text", "tier": "extra"}]}, {"id": "docs", "item": "Документ", "title": "Сопроводительные документы", "repeat": "docs", "optional_repeat": true, "add_label": "Добавить документ", "fields": [{"path": "docs[].kind", "label": "Вид", "type": "select", "tier": "main", "default": "cert", "options": [["cert", "Сертификат, паспорт качества, удостоверение"], ["sanitary", "Санитарный, таможенный, карантинный"], ["dopog", "Документ по ДОПОГ (опасный груз)"]]}, {"path": "docs[].name", "label": "Название", "type": "text", "tier": "main", "suggest": ["Сертификат соответствия", "Декларация о соответствии", "Паспорт качества", "Ветеринарное свидетельство", "Фитосанитарный сертификат", "Таможенная декларация"]}, {"path": "docs[].number", "row": "Номер и дата", "ph": "Номер", "label": "Номер", "type": "text", "tier": "main"}, {"path": "docs[].date", "join": "от", "short": true, "label": "Дата", "type": "date", "tier": "main"}]}, {"id": "instructions", "title": "Указания грузоотправителя", "fields": [{"path": "instructions.delivery_at", "label": "Дата и время доставки груза", "type": "datetime", "tier": "main", "optional": true}, {"path": "instructions.no_transship", "label": "Запрет перегрузки", "type": "radio", "tier": "main", "options": [["1", "Запрещена"], ["0", "Разрешена"]]}, {"path": "instructions.temp_mode", "group": "Требования о соблюдении температурного режима", "label": "Режим", "type": "radio", "tier": "main", "options": [["no", "Не требуется"], ["yes", "Требуется"]]}, {"path": "instructions.temp_from", "row": "Температура, °C", "ph": "от", "group": "Требования о соблюдении температурного режима", "label": "Температура от, °C", "type": "temp", "tier": "main", "show_if": {"instructions.temp_mode": "yes"}}, {"path": "instructions.temp_to", "join": "—", "ph": "до", "group": "Требования о соблюдении температурного режима", "label": "Температура до, °C", "type": "temp", "tier": "main", "show_if": {"instructions.temp_mode": "yes"}}, {"path": "instructions.hum_mode", "group": "Требования о соблюдении режима влажности", "label": "Режим", "type": "radio", "tier": "main", "options": [["no", "Не требуется"], ["yes", "Требуется"]]}, {"path": "instructions.hum_from", "row": "Влажность, %", "ph": "от", "group": "Требования о соблюдении режима влажности", "label": "Влажность от, %", "type": "number", "tier": "main", "show_if": {"instructions.hum_mode": "yes"}}, {"path": "instructions.hum_to", "join": "—", "ph": "до", "group": "Требования о соблюдении режима влажности", "label": "Влажность до, %", "type": "number", "tier": "main", "show_if": {"instructions.hum_mode": "yes"}}, {"path": "instructions.delivery_term", "label": "Срок доставки", "type": "text", "tier": "extra"}, {"path": "instructions.norms", "label": "Указания по нормам перевозки", "type": "text", "tier": "hidden", "default": "Отсутствуют"}, {"path": "instructions.readdress_by", "label": "Кто может переадресовать", "type": "text", "tier": "hidden", "default": "Грузоотправитель"}]}, {"id": "carrier", "title": "Перевозчик", "fields": [{"path": "carrier_mode", "label": "Кто везёт груз", "type": "radio", "tier": "main", "options": [["mine", "Моя организация"], ["other", "Другая организация"]], "default": "other"}, {"path": "carrier_card", "label": "Моя организация", "type": "org_card", "tier": "main", "optional": true, "show_if": {"carrier_mode": "mine"}}, {"path": "carrier.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": null, "show_if": {"carrier_mode": "other"}}, {"path": "carrier.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"carrier.kind": "ul", "carrier_mode": "other"}, "group": null}, {"path": "carrier.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "carrier", "type": "inn", "tier": "main", "group": null, "show_if": {"carrier_mode": "other"}}, {"path": "carrier.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"carrier.kind": "ul", "carrier_mode": "other"}, "group": null}, {"path": "carrier.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"carrier.kind": ["ip", "fl"], "carrier_mode": "other"}, "group": null}, {"path": "carrier.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"carrier.kind": ["ip", "fl"], "carrier_mode": "other"}, "group": null}, {"path": "carrier.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"carrier.kind": ["ip", "fl"], "carrier_mode": "other"}, "group": null}, {"path": "carrier.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"carrier_mode": "other"}}, {"path": "carrier.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"carrier_mode": "other"}}]}, {"id": "driver", "item": "Водитель", "title": "Водитель", "repeat": "drivers", "add_label": "Добавить водителя", "fields": [{"path": "drivers[].last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main"}, {"path": "drivers[].first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main"}, {"path": "drivers[].middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main"}, {"path": "drivers[].phone", "label": "Телефон водителя", "type": "phone", "tier": "main"}, {"path": "drivers[].sheet_number", "row": "Путевой лист", "ph": "Номер", "label": "Путевой лист: номер", "type": "text", "tier": "main", "optional": true}, {"path": "drivers[].sheet_date", "join": "от", "short": true, "label": "Путевой лист: дата", "type": "date", "tier": "main", "optional": true}, {"path": "drivers[].license", "label": "Водительское удостоверение: номер", "type": "text", "tier": "extra"}, {"path": "drivers[].inn", "label": "ИНН водителя", "type": "text", "tier": "extra"}]}, {"id": "vehicle", "title": "Сведения о транспортном средстве", "fields": [{"path": "vehicle.reg", "label": "Госномер", "type": "regnum", "tier": "main"}, {"path": "vehicle.brand", "label": "Марка", "type": "text", "tier": "main"}, {"path": "vehicle.type", "label": "Тип", "type": "text", "tier": "main", "suggest": ["Грузовой фургон", "Грузовой бортовой", "Тягач седельный", "Рефрижератор", "Самосвал", "Цистерна"]}, {"path": "vehicle.capacity", "row": "Грузоподъёмность, т / вместимость, м³", "ph": "т", "label": "Грузоподъёмность, т", "type": "number", "tier": "main"}, {"path": "vehicle.volume", "join": "", "ph": "м³", "label": "Вместимость, м³", "type": "number", "tier": "main"}, {"path": "vehicle.ownership", "label": "Кому принадлежит машина", "type": "select", "tier": "main", "options": [["1", "Собственность"], ["2", "Совместная собственность супругов"], ["3", "Аренда"], ["4", "Лизинг"], ["5", "Безвозмездное пользование"]], "default": "1"}, {"path": "vehicle.doc.name", "label": "Документ владения: название", "type": "text", "tier": "main", "default": "Договор аренды транспортного средства", "show_if": {"vehicle.ownership": ["3", "4", "5"]}}, {"path": "vehicle.doc.number", "row": "Документ владения: номер и дата", "ph": "Номер", "label": "Документ владения: номер", "type": "text", "tier": "main", "show_if": {"vehicle.ownership": ["3", "4", "5"]}}, {"path": "vehicle.doc.date", "join": "от", "short": true, "label": "Документ владения: дата", "type": "date", "tier": "main", "show_if": {"vehicle.ownership": ["3", "4", "5"]}}, {"path": "vehicle.vin", "label": "VIN", "type": "text", "tier": "extra"}, {"path": "vehicle.sts", "label": "Номер СТС", "type": "text", "tier": "extra"}]}, {"id": "trailer", "item": "Прицеп", "title": "Прицеп", "repeat": "trailers", "optional_repeat": true, "add_label": "Добавить прицеп", "fields": [{"path": "trailers[].reg", "label": "Госномер прицепа", "type": "regnum", "tier": "main"}, {"path": "trailers[].brand", "label": "Марка", "type": "text", "tier": "main"}, {"path": "trailers[].type", "label": "Тип", "type": "text", "tier": "main", "suggest": ["Полуприцеп тентованный", "Полуприцеп рефрижератор", "Прицеп бортовой"]}, {"path": "trailers[].capacity", "row": "Грузоподъёмность, т / вместимость, м³", "ph": "т", "label": "Грузоподъёмность, т", "type": "number", "tier": "main"}, {"path": "trailers[].volume", "join": "", "ph": "м³", "label": "Вместимость, м³", "type": "number", "tier": "main"}, {"path": "trailers[].ownership", "label": "Кому принадлежит", "type": "select", "tier": "main", "options": [["1", "Собственность"], ["2", "Совместная собственность супругов"], ["3", "Аренда"], ["4", "Лизинг"], ["5", "Безвозмездное пользование"]], "default": "1"}, {"path": "trailers[].doc.name", "label": "Документ владения: название", "type": "text", "tier": "main", "default": "Договор аренды транспортного средства", "show_if": {"trailers[].ownership": ["3", "4", "5"]}}, {"path": "trailers[].doc.number", "row": "Документ владения: номер и дата", "ph": "Номер", "label": "Документ владения: номер", "type": "text", "tier": "main", "show_if": {"trailers[].ownership": ["3", "4", "5"]}}, {"path": "trailers[].doc.date", "join": "от", "short": true, "label": "Документ владения: дата", "type": "date", "tier": "main", "show_if": {"trailers[].ownership": ["3", "4", "5"]}}]}, {"id": "loading", "title": "Приём груза", "fields": [{"path": "loading.planned", "label": "Заявленные дата и время подачи ТС", "group": "Транспортное средство", "type": "datetime", "tier": "main"}, {"path": "loading.arrived", "optional": true, "label": "Фактические дата и время прибытия", "type": "datetime", "tier": "main"}, {"path": "loading.departed", "optional": true, "label": "Фактические дата и время убытия", "type": "datetime", "tier": "main"}, {"path": "loading.places", "label": "Количество грузовых мест при приёме, шт", "type": "int", "tier": "main", "optional": true}, {"path": "loading.gross", "label": "Масса брутто груза, кг", "type": "number", "tier": "main", "optional": true}, {"path": "loading.method", "label": "Метод определения массы груза", "type": "select", "tier": "main", "options": [["01", "Взвешивание"], ["03", "Расчётная масса (по документам)"]], "default": "01"}, {"path": "loading.tare_state", "label": "Состояние тары при приёме", "type": "text", "tier": "extra", "maxlen": 1000}, {"path": "loading.pack_state", "label": "Состояние упаковки при приёме", "type": "text", "tier": "extra", "maxlen": 1000}, {"path": "loading.body_state", "label": "Состояние кузова при приёме", "type": "text", "tier": "extra", "maxlen": 1000}, {"path": "loading_addr.type", "label": "Тип", "group": "Адрес погрузки", "type": "radio", "tier": "main", "options": [["ru", "Российский"], ["foreign", "Иностранный"]], "default": "ru"}, {"path": "loading_addr.index", "label": "Индекс", "type": "postcode", "tier": "main", "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.region", "label": "Регион", "type": "select", "tier": "main", "show_if": {"loading_addr.type": "ru"}, "options": [["", "— выберите регион —"], ["22", "Алтайский край"], ["28", "Амурская область"], ["29", "Архангельская область"], ["30", "Астраханская область"], ["31", "Белгородская область"], ["32", "Брянская область"], ["33", "Владимирская область"], ["34", "Волгоградская область"], ["35", "Вологодская область"], ["36", "Воронежская область"], ["93", "Донецкая Народная Республика"], ["79", "Еврейская автономная область"], ["75", "Забайкальский край"], ["90", "Запорожская область"], ["37", "Ивановская область"], ["99", "Иные территории, включая город и космодром Байконур"], ["38", "Иркутская область"], ["07", "Кабардино-Балкарская Республика"], ["39", "Калининградская область"], ["40", "Калужская область"], ["41", "Камчатский край"], ["09", "Карачаево-Черкесская Республика"], ["42", "Кемеровская область - Кузбасс"], ["43", "Кировская область"], ["44", "Костромская область"], ["23", "Краснодарский край"], ["24", "Красноярский край"], ["45", "Курганская область"], ["46", "Курская область"], ["47", "Ленинградская область"], ["48", "Липецкая область"], ["94", "Луганская Народная Республика"], ["49", "Магаданская область"], ["77", "г. Москва"], ["50", "Московская область"], ["51", "Мурманская область"], ["83", "Ненецкий автономный округ"], ["52", "Нижегородская область"], ["53", "Новгородская область"], ["54", "Новосибирская область"], ["55", "Омская область"], ["56", "Оренбургская область"], ["57", "Орловская область"], ["58", "Пензенская область"], ["59", "Пермский край"], ["25", "Приморский край"], ["60", "Псковская область"], ["01", "Республика Адыгея (Адыгея)"], ["04", "Республика Алтай"], ["02", "Республика Башкортостан"], ["03", "Республика Бурятия"], ["05", "Республика Дагестан"], ["06", "Республика Ингушетия"], ["08", "Республика Калмыкия"], ["10", "Республика Карелия"], ["11", "Республика Коми"], ["91", "Республика Крым"], ["12", "Республика Марий Эл"], ["13", "Республика Мордовия"], ["14", "Республика Саха (Якутия)"], ["15", "Республика Северная Осетия - Алания"], ["16", "Республика Татарстан (Татарстан)"], ["17", "Республика Тыва"], ["19", "Республика Хакасия"], ["61", "Ростовская область"], ["62", "Рязанская область"], ["63", "Самарская область"], ["78", "г. Санкт-Петербург"], ["64", "Саратовская область"], ["65", "Сахалинская область"], ["66", "Свердловская область"], ["92", "г. Севастополь"], ["67", "Смоленская область"], ["26", "Ставропольский край"], ["68", "Тамбовская область"], ["69", "Тверская область"], ["70", "Томская область"], ["71", "Тульская область"], ["72", "Тюменская область"], ["18", "Удмуртская Республика"], ["73", "Ульяновская область"], ["27", "Хабаровский край"], ["86", "Ханты-Мансийский автономный округ - Югра"], ["95", "Херсонская область"], ["74", "Челябинская область"], ["20", "Чеченская Республика"], ["21", "Чувашская Республика - Чувашия"], ["87", "Чукотский автономный округ"], ["89", "Ямало-Ненецкий автономный округ"], ["76", "Ярославская область"]], "group": "Адрес погрузки"}, {"path": "loading_addr.district", "label": "Район", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.city", "label": "Город", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.locality", "label": "Населённый пункт", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.street", "label": "Улица", "type": "text", "tier": "main", "optional": true, "maxlen": 50, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.house", "row": "Дом, корпус, квартира", "ph": "Дом", "label": "Дом", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.building", "join": "", "ph": "Корпус", "label": "Корпус / строение", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.flat", "join": "", "ph": "Квартира", "label": "Квартира / офис", "type": "text", "tier": "main", "optional": true, "maxlen": 20, "show_if": {"loading_addr.type": "ru"}, "group": "Адрес погрузки"}, {"path": "loading_addr.country", "label": "Страна", "type": "select", "tier": "main", "options": [["", "— выберите страну —"], ["112", "Беларусь"], ["398", "Казахстан"], ["156", "Китай"], ["417", "Киргизия"], ["051", "Армения"], ["860", "Узбекистан"], ["762", "Таджикистан"], ["496", "Монголия"], ["031", "Азербайджан"], ["268", "Грузия"], ["792", "Турция"]], "show_if": {"loading_addr.type": "foreign"}, "group": "Адрес погрузки"}, {"path": "loading_addr.text", "label": "Адрес", "type": "text", "tier": "main", "wide": true, "maxlen": 1000, "show_if": {"loading_addr.type": "foreign"}, "group": "Адрес погрузки"}, {"path": "loading_addr.comment", "label": "Комментарий к адресу", "type": "text", "tier": "main", "optional": true, "wide": true, "maxlen": 2000, "group": "Адрес погрузки"}, {"path": "loading.loader_mode", "label": "Кто грузит", "group": "Организация, осуществляющая погрузку", "type": "radio", "tier": "main", "options": [["shipper", "Грузоотправитель"], ["other", "Другая организация"]], "default": "shipper"}, {"path": "loading.loader_card", "label": "Грузит", "type": "party_ref", "ref": "shipper", "tier": "main", "optional": true, "show_if": {"loading.loader_mode": "shipper"}}, {"path": "loader.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": "Кто грузит", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"loader.kind": "ul", "loading.loader_mode": "other"}, "group": "Кто грузит"}, {"path": "loader.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "loader", "type": "inn", "tier": "main", "group": "Кто грузит", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"loader.kind": "ul", "loading.loader_mode": "other"}, "group": "Кто грузит"}, {"path": "loader.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"loader.kind": ["ip", "fl"], "loading.loader_mode": "other"}, "group": "Кто грузит"}, {"path": "loader.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"loader.kind": ["ip", "fl"], "loading.loader_mode": "other"}, "group": "Кто грузит"}, {"path": "loader.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"loader.kind": ["ip", "fl"], "loading.loader_mode": "other"}, "group": "Кто грузит"}, {"path": "loader.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader_basis.name", "group": "Документ, на основании которого компания осуществляет погрузку", "label": "Документ", "type": "text", "tier": "main", "default": "Договор складского хранения", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader_basis.number", "row": "Номер и дата", "ph": "Номер", "group": "Документ, на основании которого компания осуществляет погрузку", "label": "Номер", "type": "text", "tier": "main", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader_basis.date", "join": "от", "short": true, "group": "Документ, на основании которого компания осуществляет погрузку", "label": "Дата", "type": "date", "tier": "main", "show_if": {"loading.loader_mode": "other"}}, {"path": "loader_worker.last", "row": "ФИО сотрудника", "ph": "Фамилия", "label": "Фамилия", "group": "Работник, который осуществляет погрузку", "type": "text", "tier": "main"}, {"path": "loader_worker.first", "join": "", "ph": "Имя", "label": "Имя", "group": "Работник, который осуществляет погрузку", "type": "text", "tier": "main"}, {"path": "loader_worker.position", "label": "Должность", "group": "Работник, который осуществляет погрузку", "type": "text", "tier": "main", "default": "Кладовщик"}, {"path": "loading.infra_owner", "label": "Владелец", "group": "Владелец объекта пункта погрузки", "type": "select", "tier": "main", "options": [["1", "Грузоотправитель (свой склад)"], ["2", "Другая организация"], ["3", "Неизвестен"]], "default": "1"}, {"path": "infra.kind", "label": "Тип", "type": "radio", "tier": "main", "options": [["ul", "Организация"], ["ip", "Индивидуальный предприниматель"], ["fl", "Физическое лицо"]], "default": "ul", "group": "Владелец площадки", "show_if": {"loading.infra_owner": "2"}}, {"path": "infra.name", "label": "Организация", "ph": "Название или ИНН", "party_name": true, "type": "text", "tier": "main", "show_if": {"infra.kind": "ul", "loading.infra_owner": "2"}, "group": "Владелец площадки"}, {"path": "infra.inn", "row": "ИНН–КПП", "label": "ИНН", "party": "infra", "type": "inn", "tier": "main", "group": "Владелец площадки", "show_if": {"loading.infra_owner": "2"}}, {"path": "infra.kpp", "join": "–", "ph": "КПП", "label": "КПП", "type": "text", "tier": "main", "optional": true, "short": true, "show_if": {"infra.kind": "ul", "loading.infra_owner": "2"}, "group": "Владелец площадки"}, {"path": "infra.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main", "show_if": {"infra.kind": ["ip", "fl"], "loading.infra_owner": "2"}, "group": "Владелец площадки"}, {"path": "infra.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main", "show_if": {"infra.kind": ["ip", "fl"], "loading.infra_owner": "2"}, "group": "Владелец площадки"}, {"path": "infra.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true, "show_if": {"infra.kind": ["ip", "fl"], "loading.infra_owner": "2"}, "group": "Владелец площадки"}, {"path": "infra.address", "label": "Адрес", "type": "address", "tier": "main", "optional": true, "group": "Юридический адрес", "show_if": {"loading.infra_owner": "2"}}, {"path": "infra.phone", "label": "Телефон", "type": "phone", "tier": "main", "group": "Контакты", "show_if": {"loading.infra_owner": "2"}}, {"path": "loading.infra_access", "label": "Основание доступа на площадку", "type": "text", "tier": "main", "default": "Договор с владельцем площадки", "show_if": {"loading.infra_owner": "2"}}, {"path": "loading.infra_unknown_reason", "label": "Почему владелец площадки неизвестен", "type": "text", "tier": "main", "show_if": {"loading.infra_owner": "3"}}]}, {"id": "marks", "item": "Отметка", "title": "Отметки грузоотправителя", "repeat": "marks", "optional_repeat": true, "add_label": "Добавить отметку", "fields": [{"path": "marks[].at", "label": "Дата и время отметки", "type": "datetime", "tier": "main"}, {"path": "marks[].text", "label": "Что произошло", "type": "text", "tier": "main", "wide": true, "maxlen": 2000}, {"path": "marks[].act_name", "label": "Акт: название", "type": "text", "tier": "extra", "suggest": ["Коммерческий акт", "Акт о повреждении имущества", "Акт общей формы"]}, {"path": "marks[].act_number", "row": "Акт: номер и дата", "ph": "Номер", "label": "Акт: номер", "type": "text", "tier": "extra"}, {"path": "marks[].act_date", "join": "от", "short": true, "label": "Акт: дата", "type": "date", "tier": "extra"}, {"path": "marks[].fine", "label": "Штраф, ₽", "type": "number", "tier": "extra"}, {"path": "marks[].fine_calc", "label": "Как посчитан штраф", "type": "text", "tier": "extra", "maxlen": 1000}, {"path": "marks[].weigh_number", "row": "Акт взвешивания: номер и дата", "ph": "Номер", "label": "Акт взвешивания: номер", "type": "text", "tier": "extra"}, {"path": "marks[].weigh_date", "join": "от", "short": true, "label": "Акт взвешивания: дата", "type": "date", "tier": "extra"}]}, {"id": "observers", "item": "Наблюдатель", "title": "Наблюдатели", "repeat": "observers", "optional_repeat": true, "note": "Видят накладную и её статус", "add_label": "Добавить наблюдателя", "fields": [{"path": "observers[].inn", "label": "ИНН", "type": "inn", "tier": "main"}, {"path": "observers[].name", "label": "Название", "type": "text", "tier": "main"}]}, {"id": "signer", "title": "Подписант", "fields": [{"path": "signer.last", "row": "ФИО", "ph": "Фамилия", "label": "Фамилия", "type": "text", "tier": "main"}, {"path": "signer.first", "join": "", "ph": "Имя", "label": "Имя", "type": "text", "tier": "main"}, {"path": "signer.middle", "join": "", "ph": "Отчество", "label": "Отчество", "type": "text", "tier": "main", "optional": true}, {"path": "signer.position", "label": "Должность", "type": "text", "tier": "main"}, {"path": "signer.status", "label": "Полномочия", "type": "select", "tier": "auto", "options": [["1", "Руководитель / без доверенности (от грузоотправителя)"], ["2", "По электронной доверенности (МЧД) от грузоотправителя"], ["3", "По бумажной доверенности от грузоотправителя"], ["4", "Без доверенности (от лица, грузящего груз)"], ["5", "По электронной доверенности (МЧД) от лица, грузящего груз"], ["6", "По бумажной доверенности от лица, грузящего груз"]], "default": "1"}, {"path": "signer.poa_number", "row": "Доверенность (МЧД)", "ph": "Номер", "label": "Доверенность (МЧД): номер", "type": "text", "tier": "main", "show_if": {"signer.status": ["2", "5"]}}, {"path": "signer.poa_date", "join": "от", "short": true, "label": "Доверенность (МЧД): дата", "type": "date", "tier": "main", "show_if": {"signer.status": ["2", "5"]}}]}];
+const REGIONS = [["22", "Алтайский край"], ["28", "Амурская область"], ["29", "Архангельская область"], ["30", "Астраханская область"], ["31", "Белгородская область"], ["32", "Брянская область"], ["33", "Владимирская область"], ["34", "Волгоградская область"], ["35", "Вологодская область"], ["36", "Воронежская область"], ["93", "Донецкая Народная Республика"], ["79", "Еврейская автономная область"], ["75", "Забайкальский край"], ["90", "Запорожская область"], ["37", "Ивановская область"], ["99", "Иные территории, включая город и космодром Байконур"], ["38", "Иркутская область"], ["07", "Кабардино-Балкарская Республика"], ["39", "Калининградская область"], ["40", "Калужская область"], ["41", "Камчатский край"], ["09", "Карачаево-Черкесская Республика"], ["42", "Кемеровская область - Кузбасс"], ["43", "Кировская область"], ["44", "Костромская область"], ["23", "Краснодарский край"], ["24", "Красноярский край"], ["45", "Курганская область"], ["46", "Курская область"], ["47", "Ленинградская область"], ["48", "Липецкая область"], ["94", "Луганская Народная Республика"], ["49", "Магаданская область"], ["77", "г. Москва"], ["50", "Московская область"], ["51", "Мурманская область"], ["83", "Ненецкий автономный округ"], ["52", "Нижегородская область"], ["53", "Новгородская область"], ["54", "Новосибирская область"], ["55", "Омская область"], ["56", "Оренбургская область"], ["57", "Орловская область"], ["58", "Пензенская область"], ["59", "Пермский край"], ["25", "Приморский край"], ["60", "Псковская область"], ["01", "Республика Адыгея (Адыгея)"], ["04", "Республика Алтай"], ["02", "Республика Башкортостан"], ["03", "Республика Бурятия"], ["05", "Республика Дагестан"], ["06", "Республика Ингушетия"], ["08", "Республика Калмыкия"], ["10", "Республика Карелия"], ["11", "Республика Коми"], ["91", "Республика Крым"], ["12", "Республика Марий Эл"], ["13", "Республика Мордовия"], ["14", "Республика Саха (Якутия)"], ["15", "Республика Северная Осетия - Алания"], ["16", "Республика Татарстан (Татарстан)"], ["17", "Республика Тыва"], ["19", "Республика Хакасия"], ["61", "Ростовская область"], ["62", "Рязанская область"], ["63", "Самарская область"], ["78", "г. Санкт-Петербург"], ["64", "Саратовская область"], ["65", "Сахалинская область"], ["66", "Свердловская область"], ["92", "г. Севастополь"], ["67", "Смоленская область"], ["26", "Ставропольский край"], ["68", "Тамбовская область"], ["69", "Тверская область"], ["70", "Томская область"], ["71", "Тульская область"], ["72", "Тюменская область"], ["18", "Удмуртская Республика"], ["73", "Ульяновская область"], ["27", "Хабаровский край"], ["86", "Ханты-Мансийский автономный округ - Югра"], ["95", "Херсонская область"], ["74", "Челябинская область"], ["20", "Чеченская Республика"], ["21", "Чувашская Республика - Чувашия"], ["87", "Чукотский автономный округ"], ["89", "Ямало-Ненецкий автономный округ"], ["76", "Ярославская область"]];
+const REGISTRY = {"7714177768": {"kind": "ul", "inn": "7714177768", "kpp": "280101001", "name": "ООО «Пример Логистик»", "address": "675000, Амурская обл, г Благовещенск, ул Ленина, д 1", "phone": "+7 4162 00-00-01"}, "7715244939": {"kind": "ul", "inn": "7715244939", "kpp": "250101001", "name": "ООО «Пример Склад»", "address": "690001, Приморский край, г Владивосток, ул Светланская, д 10", "phone": "+7 423 000-00-02"}, "7782597915": {"kind": "ul", "inn": "7782597915", "kpp": "270101001", "name": "АО «Пример Ритейл»", "address": "680000, Хабаровский край, г Хабаровск, ул Муравьёва-Амурского, д 5", "phone": "+7 4212 00-00-03"}, "283416721124": {"kind": "ip", "inn": "283416721124", "last": "Петров", "first": "Сергей", "middle": "Иванович", "phone": "+7 914 000-00-04"}};
+const SAMPLE_XML = "<?xml version='1.0' encoding='windows-1251'?>\n<Файл ИдФайл=\"ON_TRNACLGROT_0000000000_0000000000_0000000000_0_20260919_df713806-0998-4900-8ee9-7f03cef111b9\" ВерсФорм=\"5.01\" ВерсПрог=\"ETRN-Platforma 0.1\">\n  <Документ КНД=\"1110339\" ПоФактХЖ=\"Транспортная накладная, информация грузоотправителя\" ДатИнфГО=\"19.09.2026\" ВрИнфГО=\"22:38:12\">\n    <СодИнфГО СодОпер=\"Лицом, осуществляющим погрузку груза, при указанных обстоятельствах передан водителю груз с указанными характеристиками\" НомерТрН=\"3\" ДатаТрН=\"19.09.2026\" НомЗак=\"З-118\" ДатаЗак=\"18.09.2026\">\n      <СвГО ГОЭксп=\"0\">\n        <РекИдентГО>\n          <ИдСв>\n            <СвЮЛУч НаимОрг=\"ООО «Пример Логистик»\" ИННЮЛ=\"7714177768\" КПП=\"280101001\"/>\n          <\/ИдСв>\n          <Адрес>\n            <АдрИнф КодСтр=\"643\" АдрТекст=\"675000, Амурская обл, г Благовещенск, ул Ленина, д 1\"/>\n          <\/Адрес>\n          <Контакт>\n            <Тлф>+7 4162 00-00-01<\/Тлф>\n          <\/Контакт>\n        <\/РекИдентГО>\n      <\/СвГО>\n      <СвГП>\n        <РекИдентГП>\n          <ИдСв>\n            <СвЮЛУч НаимОрг=\"ООО «Пример Склад»\" ИННЮЛ=\"7715244939\" КПП=\"250101001\"/>\n          <\/ИдСв>\n          <Адрес>\n            <АдрИнф КодСтр=\"643\" АдрТекст=\"690001, Приморский край, г Владивосток, ул Светланская, д 10\"/>\n          <\/Адрес>\n          <Контакт>\n            <Тлф>+7 423 000-00-02<\/Тлф>\n          <\/Контакт>\n        <\/РекИдентГП>\n        <АдресДостГр АдрКоммент=\"Склад 2, ворота 4\">\n          <АдресРФ Индекс=\"690001\" КодРегион=\"25\" Город=\"Владивосток\" Улица=\"ул Светланская\" Дом=\"10\"/>\n        <\/АдресДостГр>\n      <\/СвГП>\n      <СвГруз>\n        <ОпГруз НаимГруз=\"Соевые бобы\" СостГруз=\"Без повреждений\" СпУпак=\"Биг-бэги\" ВидТар=\"JB\" КолМестГр=\"20\">\n          <Марк>Отсутствует<\/Марк>\n          <ПлМасГруз МасНетЗнач=\"19800.000\" МасБрутЗнач=\"20000.000\"/>\n        <\/ОпГруз>\n      <\/СвГруз>\n      <УказГО ЗапрПерегруз=\"1\" УкНормПрвз=\"Отсутствуют\">\n        <СвПА ЛицоПА=\"Грузоотправитель\" СпосПерУкПА=\"Электронное уведомление перевозчика о переадресовке\">\n          <КонтПА>\n            <Тлф>+7 4162 00-00-01<\/Тлф>\n          <\/КонтПА>\n        <\/СвПА>\n      <\/УказГО>\n      <СвПер>\n        <ИдСв>\n          <СвИП ИННФЛ=\"283416721124\">\n            <ФИО Фамилия=\"Петров\" Имя=\"Сергей\" Отчество=\"Иванович\"/>\n          <\/СвИП>\n        <\/ИдСв>\n        <Контакт>\n          <Тлф>+7 914 000-00-04<\/Тлф>\n        <\/Контакт>\n      <\/СвПер>\n      <СвВодит>\n        <Тлф>+7 914 000-00-05<\/Тлф>\n        <ФИО Фамилия=\"Смирнов\" Имя=\"Андрей\" Отчество=\"Павлович\"/>\n      <\/СвВодит>\n      <СвТС>\n        <ТС РегНомер=\"А123ВС28\" ТипВлад=\"1\">\n          <ПарТС Тип=\"Грузовой бортовой\" Марка=\"КАМАЗ 65117\" Грузопод=\"20.00\" Вместим=\"60.00\"/>\n        <\/ТС>\n      <\/СвТС>\n      <СвПогруз ЗаявПогр=\"19.09.2026T09:00:00+09:00\" НалКоорТочВрЗаяв=\"1\" ФДатВрПриб=\"19.09.2026T09:00:00+09:00\" НалКоорТочВрФПогр=\"1\" ФДатВрУбыт=\"19.09.2026T10:00:00+09:00\" НалКоорТочВрФУбыт=\"1\" МасБрутОтгр=\"20000\" МетОпрМасс=\"01\" КолМестПрием=\"20\">\n        <ФАдресПогр>\n          <АдресРФ Индекс=\"675000\" КодРегион=\"28\" Город=\"Благовещенск\" Улица=\"ул Ленина\" Дом=\"1\"/>\n        <\/ФАдресПогр>\n        <СвЛицПогрГр СовпГОП=\"1\">\n          <РабЛицПогрГр Должность=\"Кладовщик\">\n            <ОДолжОб>Должностные обязанности<\/ОДолжОб>\n            <ФИО Фамилия=\"Кузнецов\" Имя=\"Олег\"/>\n          <\/РабЛицПогрГр>\n          <ИдентРекГО>\n            <ИННЮЛ>7714177768<\/ИННЮЛ>\n          <\/ИдентРекГО>\n        <\/СвЛицПогрГр>\n        <ВладИнфр СовпГОВ=\"1\">\n          <ИдентРекГО>\n            <ИННЮЛ>7714177768<\/ИННЮЛ>\n          <\/ИдентРекГО>\n        <\/ВладИнфр>\n      <\/СвПогруз>\n    <\/СодИнфГО>\n    <Подписант СтатПодп=\"1\" Должн=\"Логист\">\n      <ФИО Фамилия=\"Иванова\" Имя=\"Мария\"/>\n    <\/Подписант>\n  <\/Документ>\n<\/Файл>\n";
+const DEMO = {"org": {"kind": "ul", "inn": "7714177768", "kpp": "280101001", "name": "ООО «Пример Логистик»", "address": "675000, Амурская обл, г Благовещенск, ул Ленина, д 1", "phone": "+7 4162 00-00-01"}, "sklad": {"kind": "ul", "inn": "7715244939", "kpp": "250101001", "name": "ООО «Пример Склад»", "address": "690001, Приморский край, г Владивосток, ул Светланская, д 10", "phone": "+7 423 000-00-02"}, "riteil": {"kind": "ul", "inn": "7782597915", "kpp": "270101001", "name": "АО «Пример Ритейл»", "address": "680000, Хабаровский край, г Хабаровск, ул Муравьёва-Амурского, д 5", "phone": "+7 4212 00-00-03"}, "petrov": {"kind": "ip", "inn": "283416721124", "last": "Петров", "first": "Сергей", "middle": "Иванович", "phone": "+7 914 000-00-04"}, "full": {"number": "3", "date": "2026-09-19", "tz": "+09:00", "order": {"number": "З-118", "date": "2026-09-18"}, "shipper_mode": "mine", "consignee_mode": "other", "carrier_mode": "other", "consignee": {"kind": "ul", "inn": "7715244939", "kpp": "250101001", "name": "ООО «Пример Склад»", "address": "690001, Приморский край, г Владивосток, ул Светланская, д 10", "phone": "+7 423 000-00-02"}, "delivery": {"type": "ru", "index": "690001", "region": "25", "city": "Владивосток", "street": "ул Светланская", "house": "10", "comment": "Склад 2, ворота 4"}, "cargo": [{"name": "Соевые бобы", "places": "20", "packing": "JB", "weight": "20000", "net": "19800"}], "instructions": {"no_transship": "1", "temp_mode": "no", "hum_mode": "no"}, "carrier": {"kind": "ip", "inn": "283416721124", "last": "Петров", "first": "Сергей", "middle": "Иванович", "phone": "+7 914 000-00-04"}, "drivers": [{"last": "Смирнов", "first": "Андрей", "middle": "Павлович", "phone": "+7 914 000-00-05"}], "vehicle": {"reg": "А123ВС28", "brand": "КАМАЗ 65117", "type": "Грузовой бортовой", "capacity": "20", "volume": "60", "ownership": "1"}, "trailers": [], "loading_addr": {"type": "ru", "index": "675000", "region": "28", "city": "Благовещенск", "street": "ул Ленина", "house": "1"}, "loading": {"planned": "2026-09-19T09:00", "loader_mode": "shipper", "method": "01", "infra_owner": "1"}, "loader_worker": {"last": "Кузнецов", "first": "Олег", "position": "Кладовщик"}, "signer": {"last": "Иванова", "first": "Мария", "position": "Логист", "status": "1"}}, "draft": {"number": "2", "date": "2026-09-19", "tz": "+09:00", "shipper_mode": "mine", "consignee_mode": "other", "carrier_mode": "other", "consignee": {"kind": "ul", "inn": "7782597915", "kpp": "270101001", "name": "АО «Пример Ритейл»", "address": "680000, Хабаровский край, г Хабаровск, ул Муравьёва-Амурского, д 5", "phone": "+7 4212 00-00-03"}, "delivery": {"type": "ru", "index": "680000", "region": "27", "city": "Хабаровск"}, "cargo": [{"name": "Соевый шрот", "places": "33", "packing": "PX"}], "loading_addr": {"type": "ru", "index": "675000", "region": "28", "city": "Благовещенск", "street": "ул Ленина", "house": "1"}, "loading": {"loader_mode": "shipper"}, "loader_worker": {"last": "Кузнецов", "first": "Олег", "position": "Кладовщик"}, "signer": {"last": "Иванова", "first": "Мария", "position": "Логист", "status": "1"}}};
+</script>
+<script>
+/* Редактор накладной: рисует форму по описанию полей с сервера, сохраняет черновик сам. */
+function startEditor(boot) {
+  "use strict";
+  const SPEC = boot.spec.sections;
+  const ID = boot.id;
+  let data = boot.data || {};
+  let state = boot.state;
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+  const $form = document.getElementById("form");
+  const $nav = document.getElementById("nav");
+  const $save = document.getElementById("save-state");
+  const openFolds = new Set();
+  const found = {}; // prefix -> «подставлено из ЕГРЮЛ»
+
+  // ---------- данные по пути «a.b» и «cargo[].name» ----------
+  function get(obj, path, idx) {
+    let cur = obj;
+    for (const part of path.split(".")) {
+      if (cur == null) return undefined;
+      if (part.endsWith("[]")) {
+        const list = cur[part.slice(0, -2)] || [];
+        if (idx == null || idx >= list.length) return undefined;
+        cur = list[idx];
+      } else cur = cur[part];
+    }
+    return cur;
+  }
+  function put(obj, path, value, idx) {
+    const parts = path.split(".");
+    let cur = obj;
+    for (const part of parts.slice(0, -1)) {
+      if (part.endsWith("[]")) cur = (cur[part.slice(0, -2)] ||= [])[idx];
+      else cur = (cur[part] ||= {});
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+  const isEmpty = (v) => v == null || (typeof v === "string" && !v.trim());
+  const key = (path, idx) => (idx == null ? path : path.replace("[]", `[${idx}]`));
+
+  function visible(f, idx) {
+    for (const [p, want] of Object.entries(f.show_if || {})) {
+      const have = get(data, p, idx);
+      if (typeof want === "boolean") { if (!!have !== want) return false; }
+      else if (Array.isArray(want)) { if (!want.includes(have)) return false; }
+      else if (have !== want) return false;
+    }
+    return true;
+  }
+  if (data.loading && data.loading.loader_is_shipper === false && !data.loading.loader_mode) data.loading.loader_mode = "other";
+  // новые поля с умолчанием (например «Кто получает груз») в старых черновиках ещё не заданы — подставляем
+  SPEC.forEach((s) => { if (!s.repeat) s.fields.forEach((f) => {
+    if (f.default !== undefined && get(data, f.path) === undefined) put(data, f.path, f.default);
+    if (f.type === "radio" && typeof get(data, f.path) === "boolean") put(data, f.path, get(data, f.path) ? "1" : "0");
+  }); });
+  const DEPS = new Set();
+  SPEC.forEach((s) => s.fields.forEach((f) => Object.keys(f.show_if || {}).forEach((k) => DEPS.add(k))));
+
+  function defaultsFor(section) {
+    const item = {};
+    for (const f of section.fields) {
+      if (f.default !== undefined) put({ x: [item] }, f.path.replace(/^[a-z_]+\[\]/, "x[]"), f.default, 0);
+    }
+    return item;
+  }
+
+  // ---------- DOM ----------
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (k === "class") el.className = v;
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()) if (kid != null) el.append(kid);
+    return el;
+  }
+
+  function render() {
+    const act = document.activeElement;
+    const focusKey = act && act.dataset ? act.dataset.key : null;
+    const caret = focusKey && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
+    $form.replaceChildren(...SPEC.map(renderSection));
+    decorate();
+    if (focusKey) {
+      const el = $form.querySelector(`[data-key="${CSS.escape(focusKey)}"]`);
+      if (el) { el.focus(); if (caret && el.setSelectionRange) try { el.setSelectionRange(...caret); } catch (e) { /* select/date */ } }
+    }
+  }
+
+  function renderSection(s) {
+    const body = [];
+    if (s.repeat) {
+      const items = data[s.repeat] || (data[s.repeat] = []);
+      if (!items.length && !s.optional_repeat) items.push(defaultsFor(s));
+      items.forEach((_, i) => {
+        const canRemove = s.optional_repeat || items.length > 1;
+        body.push(h("div", { class: "item" },
+          h("div", { class: "item-head" },
+            h("span", {}, items.length > 1 || s.optional_repeat ? `${s.item || s.title} ${i + 1}` : ""),
+            h("span", { class: "item-actions" },
+              h("button", { class: "link", type: "button", title: "Добавить такой же ниже",
+                onclick: () => { items.splice(i + 1, 0, JSON.parse(JSON.stringify(items[i]))); changed(true); } }, "Копировать"),
+              canRemove ? h("button", { class: "link danger", type: "button",
+                onclick: () => { items.splice(i, 1); changed(true); } }, "Убрать") : null)),
+          renderFields(s, i)));
+      });
+      body.push(h("button", { class: "link add", type: "button",
+        onclick: () => { items.push(defaultsFor(s)); changed(true); } }, "+ " + s.add_label));
+      if (s.id === "observers") {
+        const o = boot.org || {};
+        const already = items.some((x) => String(x.inn || "") === String(o.inn || ""));
+        if (o.inn && !already) body.push(h("button", { class: "link add", type: "button", style: "margin-left:18px",
+          onclick: () => { items.push({ inn: o.inn, name: displayName(o) }); changed(true); } },
+          "+ Добавить мою организацию"));
+      }
+    } else body.push(renderFields(s, null));
+    return h("section", { class: "card sec", id: "s-" + s.id },
+      h("div", { class: "sec-head" }, h("h2", {}, s.title), h("span", { class: "state", "data-sec": s.id })),
+      s.note ? h("p", { class: "muted small sec-note" }, s.note) : null,
+      ...body);
+  }
+
+  function renderFields(s, idx) {
+    const vis = s.fields.filter((f) => visible(f, idx));
+    const by = (t) => vis.filter((f) => f.tier === t);
+    const rows = (fs) => {  // поля строками + подзаголовки групп, как в Контуре
+      const out = []; let last = null;
+      let ctl = null, prevI = -2;
+      for (const f of fs) {
+        if (f.group && f.group !== last) { out.push(h("h3", { class: "grp" }, f.group)); last = f.group; ctl = null; }
+        const i = s.fields.indexOf(f);
+        const cell = fieldEl(f, idx);
+        if (f.type === "org_card" || f.type === "party_ref") { out.push(cell); ctl = null; prevI = i; continue; }
+        if (f.join !== undefined && ctl && prevI === i - 1) {  // в ту же строку: «№ … от …», «ИНН – КПП»
+          if (f.join) ctl.append(h("span", { class: "sep" }, f.join));
+          ctl.append(cell);
+        } else {
+          ctl = h("div", { class: "ctl" }, cell);
+          const req = f.tier === "main" && !f.optional && f.type !== "checkbox";
+          out.push(h("div", { class: "frow" },
+            h("span", { class: "lbl" + (req ? " req" : "") }, f.type === "checkbox" ? "" : (f.row || f.label)), ctl));
+        }
+        prevI = i;
+      }
+      return out;
+    };
+    const wrap = h("div", {}, h("div", { class: "grid" }, rows(by("main"))));
+    for (const [tier, title] of [["auto", "Заполнено автоматически"], ["extra", "Ещё поля"]]) {
+      const fs = by(tier);
+      if (!fs.length) continue;
+      const fk = `${s.id}:${idx}:${tier}`;
+      const hasValue = tier === "extra" && fs.some((f) => !isEmpty(get(data, f.path, idx)) && get(data, f.path, idx) !== false);
+      const sum = "";
+      const det = h("details", { class: "fold " + tier, open: openFolds.has(fk) || hasValue },
+        h("summary", {}, `${title} · ${fs.length}`),
+        h("div", { class: "grid" }, rows(fs)));
+      det.addEventListener("toggle", () => (det.open ? openFolds.add(fk) : openFolds.delete(fk)));
+      wrap.append(det);
+    }
+    return wrap;
+  }
+
+  function summary(f, idx) {
+    let v = get(data, f.path, idx);
+    if (isEmpty(v)) v = state.computed[f.path];
+    if (isEmpty(v)) return "";
+    if (f.options) { const o = f.options.find((x) => x[0] === v); if (o) v = o[1]; }
+    if (typeof v === "boolean") v = v ? "да" : "нет";
+    else v = fmtComp(String(v), f);
+    return `${f.label.replace(/^.*: /, "")}: ${v}`;
+  }
+
+  const SUGGEST = (f) => {
+    const p = f.path;
+    if (/\.(inn|name|last)$/.test(p) && /^(shipper|consignee|carrier|customer|loader|infra)\./.test(p)) return "party";
+    if (p === "vehicle.reg") return "vehicle";
+    if (p === "trailers[].reg") return "trailer";
+    if (p === "drivers[].last") return "driver";
+    if (p === "cargo[].name") return "cargo";
+    if (/^(delivery|loading_addr)\.city$/.test(p)) return "place";
+    return null;
+  };
+
+  function fieldEl(f, idx) {
+    const k = key(f.path, idx);
+    let v = get(data, f.path, idx);
+    if (f.type === "org_card") return orgCard(f);
+    if (f.type === "party_ref") return partyRef(f);
+    const wide = f.wide || f.type === "address" || f.type === "radio" || f.type === "checkbox";
+    const SHORT = ["postcode", "int", "number", "date", "datetime", "phone", "inn", "regnum", "temp"];
+    const cls = ["field", "t-" + (f.optional ? "opt" : f.tier), SHORT.includes(f.type) || f.short ? "short" : "", f.type === "checkbox" ? "check" : "", wide ? "wide" : ""].join(" ");
+    let input;
+    const onInput = (e) => {
+      let val = f.type === "checkbox" ? e.target.checked : e.target.value;
+      put(data, f.path, val, idx);
+      if (f.type === "inn") innTyped(f, idx, val, e.type === "change");
+      // в «Организацию» можно ввести ИНН, как в Контуре: переносим в ИНН и ищем
+      const digits = String(val).replace(/\s/g, "");
+      if (f.party_name && e.type === "change" && /^(\d{10}|\d{12})$/.test(digits)) {
+        const pre = f.path.split(".")[0];
+        data[pre].inn = digits; data[pre].name = "";
+        const innF = SPEC.flatMap((x) => x.fields).find((x) => x.path === pre + ".inn");
+        innTyped(innF, idx, digits, true); render();
+      }
+      mark(e.target.closest(".field"), f, val);
+      const refDep = /^shipper\./.test(f.path) && e.type === "change";  // обновить карточку «Грузит»
+      changed((DEPS.has(f.path) && (e.type === "change" || f.type === "select" || f.type === "radio")) || refDep);
+    };
+    if (f.type === "radio") {
+      input = h("div", { class: "radios" }, f.options.map(([val, lbl], i) =>
+        h("label", { class: "radio" + (v === val ? " on" : "") },
+          h("input", { type: "radio", name: k, value: val, checked: v === val, "data-key": i === 0 ? k : null,
+            onchange: onInput }), lbl)));
+    } else if (f.type === "select") {
+      input = h("select", { "data-key": k, onchange: onInput },
+        f.options.map(([val, lbl]) => h("option", { value: val, selected: v === val }, lbl)));
+    } else if (f.type === "checkbox") {
+      input = h("input", { type: "checkbox", "data-key": k, checked: !!v, onchange: onInput });
+    } else {
+      const type = f.type === "date" ? "date" : f.type === "datetime" ? "datetime-local" : "text";
+      const mode = f.type === "temp" ? "text" : f.type === "inn" || f.type === "int" || f.type === "postcode" ? "numeric" : f.type === "number" ? "decimal"
+        : f.type === "phone" ? "tel" : null;
+      const comp = state.computed[f.path];
+      input = h("input", { type, inputmode: mode, "data-key": k, value: v ?? "", autocomplete: "off",
+        placeholder: !isEmpty(comp) ? "авто: " + fmtComp(comp, f) : null, oninput: onInput,
+        onchange: /^shipper\./.test(f.path) || f.type === "inn" || f.party_name ? onInput : null,
+        onkeydown: f.type === "inn" ? (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } } : null,
+        list: f.suggest ? "dl-" + f.path.replace(/\W/g, "") : null });
+      const src = SUGGEST(f);
+      if (src) attachSuggest(input, src, f, idx);
+    }
+    const now = f.type === "datetime" ? h("button", { class: "link small now", type: "button",
+      onclick: (e) => {
+        e.preventDefault();
+        const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        const val = d.toISOString().slice(0, 16);
+        put(data, f.path, val, idx); input.value = val; mark(input.closest(".field"), f, val); changed(false);
+      } }, "Сейчас") : null;
+    if (f.ph && input.tagName === "INPUT" && !input.placeholder) input.placeholder = f.ph;
+    const kids = f.type === "checkbox" ? [h("label", { class: "chk" }, input, f.label)] : [input, now];
+    const el = h("div", { class: cls + " cell", "data-field": k },
+      ...kids,
+      f.type === "inn" && found[holderKey(f, idx)] ? h("span", { class: "found" }, found[holderKey(f, idx)]) : null,
+      h("span", { class: "msg" }),
+      h("span", { class: "hint" }, f.hint || ""),
+      f.suggest ? h("datalist", { id: "dl-" + f.path.replace(/\W/g, "") }, f.suggest.map((x) => h("option", { value: x }))) : null);
+    mark(el, f, v);
+    return el;
+  }
+
+  function orgCard(f) {
+    const o = boot.org || {};
+    const back = "#/org";
+    if (!o.inn) {
+      return h("div", { class: "org-card wide empty-org", "data-field": f.path },
+        h("b", {}, "Данные вашей организации ещё не заполнены"),
+        h("a", { class: "btn primary", href: back }, "Заполнить"));
+    }
+    const name = o.kind === "ul" || !o.kind ? o.name : ["ИП", o.last, o.first, o.middle].filter(Boolean).join(" ");
+    const row = (l, v) => v ? h("div", { class: "org-row" }, h("span", { class: "muted" }, l), h("span", {}, v)) : null;
+    return h("div", { class: "org-card wide", "data-field": f.path },
+      h("div", { class: "org-name" }, name, h("a", { href: back, class: "small" }, "Изменить")),
+      row("ИНН", o.inn + (o.kpp ? " / КПП " + o.kpp : "")), row("Адрес", o.address), row("Телефон", o.phone));
+  }
+
+  // «Грузит сам грузоотправитель»: показываем его реквизиты, взятые из раздела выше — вводить заново не нужно
+  function partyRef(f) {
+    const mine = data[f.ref + "_mode"] === "mine";
+    const p = mine ? (boot.org || {}) : (data[f.ref] || {});
+    const name = p.kind === "ip" || p.kind === "fl" ? [p.kind === "ip" ? "ИП" : "", p.last, p.first, p.middle].filter(Boolean).join(" ") : p.name;
+    const row = (l, v) => v ? h("div", { class: "org-row" }, h("span", { class: "muted" }, l), h("span", {}, v)) : null;
+    return h("div", { class: "org-card wide", "data-field": f.path },
+      h("div", { class: "org-name" }, name || "Грузоотправитель ещё не заполнен",
+        h("a", { href: "#s-" + f.ref, class: "small" }, "Изменить")),
+      row("ИНН", p.inn ? p.inn + (p.kpp ? " / КПП " + p.kpp : "") : ""), row("Телефон", p.phone));
+  }
+
+  function fmtComp(v, f) {
+    if (f.type === "datetime" && /^\d{4}-\d\d-\d\dT/.test(v)) {
+      const [d, t] = v.split("T"); return d.split("-").reverse().join(".") + " " + t.slice(0, 5);
+    }
+    if (f.type === "date" && /^\d{4}-\d\d-\d\d$/.test(v)) return v.split("-").reverse().join(".");
+    return v;
+  }
+
+  function mark(el, f, v) {
+    if (!el || f.tier !== "main" || f.optional) return;
+    const e = isEmpty(v) && f.type !== "checkbox";
+    el.classList.toggle("is-empty", e);
+    el.classList.toggle("is-done", !e);
+  }
+
+  // ---------- проблемы с сервера и прогресс ----------
+  function decorate() {
+    const probs = state.problems || [];
+    const byKey = {};
+    for (const p of probs) byKey[key(p.path, p.idx)] = p;
+    $form.querySelectorAll("[data-field]").forEach((el) => {
+      const p = byKey[el.dataset.field];
+      el.classList.toggle("err", !!p && p.kind === "invalid");
+      const msg = el.querySelector(".msg");
+      if (msg) msg.textContent = p && p.kind === "invalid" ? p.message : "";
+    });
+    const perSec = {};
+    for (const p of probs) (perSec[p.section] ||= { need: 0, bad: 0 })[p.kind === "invalid" ? "bad" : "need"]++;
+    $nav.replaceChildren(...SPEC.map((s) => {
+      const c = perSec[s.id];
+      const badge = !c ? h("span", { class: "cnt ok" }, "✓")
+        : c.bad ? h("span", { class: "cnt bad" }, `${c.bad + c.need} !`) : h("span", { class: "cnt" }, String(c.need));
+      return h("li", {}, h("a", { href: "#s-" + s.id, onclick: (e) => { e.preventDefault(); goSection(s.id); } }, s.title, badge));
+    }));
+    document.querySelectorAll("[data-sec]").forEach((el) => {
+      const c = perSec[el.dataset.sec];
+      el.className = "state " + (c ? "need" : "ok");
+      el.textContent = c ? String(c.bad + c.need) : "";
+    });
+    const [filled, total] = state.progress;
+    document.getElementById("p-num").textContent = `Заполнено ${filled} из ${total}`;
+    document.getElementById("p-bar").style.width = (total ? (100 * filled) / total : 0) + "%";
+    document.getElementById("p-hint").textContent = "";
+    const btn = document.getElementById("btn-xml");
+    btn.textContent = probs.length ? `Осталось ${probs.length} ${plural(probs.length, "поле", "поля", "полей")}` : "Сформировать XML";
+    btn.className = "btn " + (probs.length ? "warn" : "primary");
+    document.getElementById("t-num").textContent = "№ " + (data.number || "—");
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  }
+
+  function goSection(id) {
+    document.getElementById("s-" + id).scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function goFirstProblem() {
+    const p = (state.problems || [])[0];
+    if (!p) return;
+    let el = $form.querySelector(`[data-field="${CSS.escape(key(p.path, p.idx))}"]`);
+    if (el) {
+      const det = el.closest("details"); if (det) det.open = true;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      const inp = el.querySelector("input,select"); if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 350);
+    } else goSection(p.section);
+  }
+
+  // ---------- автосохранение ----------
+  let timer = null, saving = false, again = false;
+  function changed(rerender) {
+    if (rerender) render();
+    setSave("pending", "Сохраняю…");
+    try { localStorage.setItem("etrn-draft-" + ID, JSON.stringify({ t: Date.now(), data })); } catch (e) { /* приватный режим */ }
+    clearTimeout(timer);
+    timer = setTimeout(save, 600);
+  }
+  async function save(keepalive) {
+    if (saving) { again = true; return; }
+    saving = true;
+    try {
+      const r = await fetch(`/api/${ID}/save/`, {
+        method: "POST", keepalive: !!keepalive,
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
+        body: JSON.stringify({ data }),
+      });
+      const js = await r.json();
+      if (!r.ok) throw new Error(js.error || r.status);
+      const computedChanged = JSON.stringify(js.computed) !== JSON.stringify(state.computed);
+      state = js;
+      try { localStorage.removeItem("etrn-draft-" + ID); } catch (e) { /* ignore */ }
+      const t = new Date(js.saved_at);
+      setSave("ok", `Сохранено ${t.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`);
+      if (computedChanged) refreshComputed();
+      decorate();
+    } catch (e) {
+      setSave("fail", "Нет связи — повторяю");
+      clearTimeout(timer); timer = setTimeout(save, 5000);
+    } finally {
+      saving = false;
+      if (again) { again = false; save(); }
+    }
+  }
+  function refreshComputed() {
+    $form.querySelectorAll("input[data-key]").forEach((inp) => {
+      const path = inp.dataset.key.replace(/\[\d+\]/, "[]");
+      const comp = state.computed[path];
+      if (comp !== undefined) {
+        const f = SPEC.flatMap((s) => s.fields).find((x) => x.path === path);
+        inp.placeholder = isEmpty(comp) ? "" : "авто: " + fmtComp(comp, f || {});
+      }
+    });
+  }
+  function setSave(cls, text) { $save.className = "save-state " + cls; $save.textContent = text; }
+  window.addEventListener("beforeunload", () => { if (timer && $save.classList.contains("pending")) save(true); });
+
+  // восстановление из браузера — только если там изменения новее, чем на сервере (не успели уйти)
+  try {
+    const local = JSON.parse(localStorage.getItem("etrn-draft-" + ID) || "null");
+    const serverT = state.saved_at ? Date.parse(state.saved_at) : 0;
+    if (local && local.t && local.data && local.t > serverT) { data = local.data; setTimeout(() => changed(true), 0); }
+    else localStorage.removeItem("etrn-draft-" + ID);
+  } catch (e) { /* ignore */ }
+
+  // ---------- ИНН → реквизиты ----------
+  // чей это ИНН: участник («shipper») или элемент списка («observers[0]»)
+  const holderKey = (f, idx) => f.path.includes("[]") ? f.path.split("[]")[0] + "[" + idx + "]" : f.path.split(".")[0];
+  function holder(f, idx) {
+    if (f.path.includes("[]")) return data[f.path.split("[]")[0]][idx];
+    const k = f.path.split(".")[0];
+    return data[k] || (data[k] = {});
+  }
+  const displayName = (v) => v.name || [v.kind === "ip" ? "ИП" : "", v.last, v.first, v.middle].filter(Boolean).join(" ");
+
+  async function innTyped(f, idx, val, finished) {
+    const prefix = holderKey(f, idx);
+    const inn = String(val).replace(/\D/g, "");
+    const p = holder(f, idx);
+    const oldKind = p.kind;
+    if (inn.length === 10) p.kind = "ul";
+    else if (inn.length === 12 && p.kind === "ul") p.kind = "ip";
+    if (p.kind !== oldKind) render();
+    if (inn.length !== 10 && inn.length !== 12) { delete found[prefix]; return; }
+    // ИНН ИП при наборе проходит через 10 цифр — ищем 10-значный только когда ввод закончен (Enter / уход из поля)
+    if (inn.length === 10 && !finished) return;
+    const r = await fetch("/api/inn/?inn=" + inn).then((x) => x.json()).catch(() => null);
+    if (!r || String(p.inn || "").replace(/\D/g, "") !== inn) return;
+    if (!r.found) { found[prefix] = r.error ? "" : "Не найден в ЕГРЮЛ"; render(); return; }
+    if (f.path.includes("[]")) { if (isEmpty(p.name)) p.name = displayName(r.value); }
+    else {
+      fillParty(prefix, r.value, false);
+      const sg = data.signer || (data.signer = {});
+      if (prefix === "shipper" && r.value.head && isEmpty(sg.last)) {  // руководитель отправителя — подписант по умолчанию
+        const [last, first, ...mid] = r.value.head.split(" ");
+        Object.assign(sg, { last, first: first || "", middle: mid.join(" "), position: sg.position || r.value.head_post || "" });
+      }
+    }
+    delete found[prefix];
+    changed(true);
+  }
+  function fillParty(prefix, value, overwrite) {
+    const p = data[prefix] || (data[prefix] = {});
+    for (const [k, v] of Object.entries(value)) {
+      if (["addr", "head", "head_post", "status"].includes(k)) continue;
+      if (!isEmpty(v) && (overwrite || isEmpty(p[k]) || k === "kind")) p[k] = v;
+    }
+  }
+
+  // ---------- подсказки из справочников ----------
+  function attachSuggest(input, type, f, idx) {
+    let box = null, items = [], on = -1, t = null;
+    const close = () => { if (box) box.remove(); box = null; on = -1; };
+    const pick = (it) => {
+      close();
+      if (type === "party") { fillParty(f.path.split(".")[0], it.value, true); }
+      else if (type === "vehicle") data.vehicle = { ...(data.vehicle || {}), ...it.value };
+      else if (type === "trailer") data.trailers[idx] = { ...data.trailers[idx], ...it.value };
+      else if (type === "driver") data.drivers[idx] = { ...data.drivers[idx], ...it.value };
+      else if (type === "cargo") data.cargo[idx] = { ...data.cargo[idx], ...it.value };
+      else if (type === "place") {
+        const pre = f.path.split(".")[0];
+        data[pre] = { ...it.value, comment: (data[pre] || {}).comment };
+      }
+      changed(true);
+    };
+    const show = () => {
+      close();
+      if (!items.length || document.activeElement !== input) return;
+      box = h("div", { class: "dd" }, items.map((it, i) =>
+        h("div", { class: i === on ? "on" : "", onmousedown: (e) => { e.preventDefault(); pick(it); } },
+          it.label, it.sub ? h("small", {}, it.sub) : null)));
+      input.parentElement.append(box);
+    };
+    const load = () => {
+      clearTimeout(t);
+      t = setTimeout(async () => {
+        const q = input.value.trim();
+        const r = await fetch(`/api/suggest/?type=${type}&q=${encodeURIComponent(q)}`).then((x) => x.json()).catch(() => ({ items: [] }));
+        items = (r.items || []).filter((it) => it.label !== q);
+        show();
+      }, 150);
+    };
+    input.addEventListener("focus", load);
+    input.addEventListener("input", load);
+    input.addEventListener("blur", () => setTimeout(close, 100));
+    input.addEventListener("keydown", (e) => {
+      if (!box) return;
+      if (e.key === "ArrowDown") { on = Math.min(items.length - 1, on + 1); show(); e.preventDefault(); }
+      else if (e.key === "ArrowUp") { on = Math.max(0, on - 1); show(); e.preventDefault(); }
+      else if (e.key === "Enter" && on >= 0) { pick(items[on]); e.preventDefault(); }
+      else if (e.key === "Escape") close();
+    });
+  }
+
+  // ---------- XML ----------
+  document.getElementById("btn-xml").addEventListener("click", async () => {
+    if ((state.problems || []).length) { goFirstProblem(); return; }
+    clearTimeout(timer); await save();
+    if ((state.problems || []).length) { goFirstProblem(); return; }
+    const r = await fetch(`/${ID}/xml/`);
+    if (!r.ok) {
+      const js = await r.json().catch(() => ({}));
+      if (js.problems) { state.problems = js.problems; decorate(); goFirstProblem(); return; }
+      toast("Не удалось собрать XML: " + (js.xsd_errors || [r.status]).join("; "));
+      return;
+    }
+    showXml(await r.text());
+  });
+
+  function toast(text) {
+    const el = document.getElementById("toast");
+    el.textContent = text; el.hidden = false;
+    clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 5000);
+  }
+
+  render();
+}
+
+</script>
+<script>
+/* Демо без сервера: хранилище в браузере, те же проверки, что на сервере (упрощённый перенос build.problems). */
+const LS = "etrn-demo-v1";
+const today = () => new Date().toISOString().slice(0, 10);
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const isEmptyV = (v) => v == null || (typeof v === "string" && !v.trim());
+
+function seed() {
+  const w = (id, number, data, status, created) => ({ id, number, date: data.date, status, data: clone(data), created });
+  return {
+    org: clone(DEMO.org), seq: 3,
+    waybills: [w(3, "3", DEMO.full, "ready", 3), w(2, "2", DEMO.draft, "draft", 2)],
+    parties: [clone(DEMO.sklad), clone(DEMO.riteil), clone(DEMO.petrov)],
+    vehicles: [{ reg: "А123ВС28", brand: "КАМАЗ 65117", type: "Грузовой бортовой", capacity: "20", volume: "60", ownership: "1", is_trailer: false }],
+    drivers: [{ last: "Смирнов", first: "Андрей", middle: "Павлович", phone: "+7 914 000-00-05", license: "" }],
+    places: [],
+  };
+}
+let DB;
+try { DB = JSON.parse(localStorage.getItem(LS) || "null"); } catch (e) { DB = null; }
+if (!DB || !DB.waybills) DB = seed();
+function persist() { try { localStorage.setItem(LS, JSON.stringify(DB)); } catch (e) { /* приватный режим — живём в памяти */ } }
+
+// ---------- проверки, как на сервере ----------
+const ALLF = SPEC.flatMap((s) => s.fields.map((f) => [s, f]));
+function g(o, path, idx) {
+  let c = o;
+  for (const p of path.split(".")) {
+    if (c == null) return undefined;
+    if (p.endsWith("[]")) { const l = c[p.slice(0, -2)] || []; if (idx == null || idx >= l.length) return undefined; c = l[idx]; }
+    else c = c[p];
+  }
+  return c;
+}
+function pt(o, path, v, idx) {
+  const ps = path.split("."); let c = o;
+  for (const p of ps.slice(0, -1)) { if (p.endsWith("[]")) c = (c[p.slice(0, -2)] ||= [])[idx]; else c = (c[p] ||= {}); }
+  c[ps[ps.length - 1]] = v;
+}
+function vis(f, d, idx) {
+  for (const [p, want] of Object.entries(f.show_if || {})) {
+    const have = g(d, p, idx);
+    if (typeof want === "boolean") { if (!!have !== want) return false; }
+    else if (Array.isArray(want)) { if (!want.includes(have)) return false; }
+    else if (have !== want) return false;
+  }
+  return true;
+}
+const idxs = (s, d) => (s.repeat ? (d[s.repeat] || []).map((_, i) => i) : [null]);
+function innOk(v) {
+  const s = String(v || "").replace(/\D/g, "");
+  const cs = (k) => k.reduce((a, b, i) => a + +s[i] * b, 0) % 11 % 10;
+  if (s.length === 10) return +s[9] === cs([2, 4, 10, 3, 5, 9, 4, 6, 8]);
+  if (s.length === 12) return +s[10] === cs([7, 2, 4, 10, 3, 5, 9, 4, 6, 8]) && +s[11] === cs([3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8]);
+  return false;
+}
+const num = (v) => { const n = parseFloat(String(v ?? "").replace(",", ".").replace(/\s/g, "")); return isNaN(n) ? null : n; };
+
+function normalize(data) {
+  const d = clone(data || {});
+  d.cargo = d.cargo && d.cargo.length ? d.cargo : [{}];
+  d.drivers = d.drivers && d.drivers.length ? d.drivers : [{}];
+  for (const k of ["shipper", "consignee", "carrier"]) if (d[k + "_mode"] === "mine") d[k] = clone(DB.org);
+  for (const k of ["shipper", "consignee", "carrier", "customer", "loader", "infra"]) {
+    const p = (d[k] ||= {}); const inn = String(p.inn || "").replace(/\D/g, "");
+    if (inn.length === 10) p.kind = "ul"; else if (inn.length === 12 && !["ip", "fl"].includes(p.kind)) p.kind = "ip";
+  }
+  for (const [s, f] of ALLF) if (f.default !== undefined) for (const i of idxs(s, d)) {
+    const v = g(d, f.path, i);
+    if (v === undefined || v === null || (typeof f.default === "string" && isEmptyV(v))) pt(d, f.path, f.default, i);
+  }
+  if (isEmptyV(g(d, "order.date"))) pt(d, "order.date", d.date);
+  const ld = (d.loading ||= {});
+  if (isEmptyV(ld.arrived)) ld.arrived = ld.planned;
+  if (isEmptyV(ld.departed) && ld.arrived) {
+    const t = new Date(ld.arrived); t.setHours(t.getHours() + 1);
+    if (!isNaN(t)) ld.departed = new Date(t - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  }
+  const sum = (k) => { const a = d.cargo.map((c) => num(c[k])); return a.every((x) => x != null) ? a.reduce((x, y) => x + y, 0) : null; };
+  if (isEmptyV(ld.gross) && sum("weight") != null) ld.gross = String(sum("weight"));
+  if (isEmptyV(ld.places) && sum("places") != null) ld.places = String(sum("places"));
+  const ins = (d.instructions ||= {});
+  if (isEmptyV(ins.readdress_phone)) ins.readdress_phone = g(d, "shipper.phone");
+  return d;
+}
+function checkValue(f, v) {
+  if (f.maxlen && String(v).length > f.maxlen) return `Не длиннее ${f.maxlen} знаков`;
+  if (f.type === "postcode" && !/^\d{6}$/.test(String(v).trim())) return "Индекс — ровно 6 цифр";
+  if (f.type === "inn" && !innOk(v)) return "ИНН с ошибкой";
+  if (["number", "int"].includes(f.type) && (num(v) == null || num(v) < 0)) return "Нужно число";
+  if (f.type === "temp" && num(v) == null) return "Нужно число";
+  if (f.type === "regnum" && String(v).replace(/\s/g, "").length > 9) return "Не больше 9 знаков";
+  if (f.type === "phone" && String(v).replace(/\D/g, "").length < 5) return "Слишком короткий телефон";
+  return null;
+}
+function stateFor(w) {
+  const d = normalize(w.data);
+  const problems = []; let total = 0, filled = 0;
+  for (const [s, f] of ALLF) for (const i of idxs(s, d)) {
+    if (f.tier === "hidden" || !vis(f, d, i)) continue;
+    const v = g(d, f.path, i);
+    const base = { path: f.path, idx: i, section: s.id, label: f.label, tier: f.tier };
+    const req = f.tier === "main" && !f.optional && !["org_card", "party_ref"].includes(f.type);
+    if (req) { total++; if (!isEmptyV(v)) filled++; }
+    if (isEmptyV(v) || (v === false && f.type !== "checkbox")) { if (req) problems.push({ ...base, kind: "missing", message: "Не заполнено" }); continue; }
+    const m = checkValue(f, v); if (m) problems.push({ ...base, kind: "invalid", message: m });
+  }
+  for (const k of ["shipper", "consignee", "carrier"]) if (d[k + "_mode"] === "mine") {
+    const o = DB.org || {};
+    if (!innOk(o.inn) || isEmptyV(o.kind === "ip" ? o.last : o.name) || isEmptyV(o.phone))
+      problems.push({ path: k + "_mode", idx: null, section: k, label: "Моя организация", tier: "main", kind: "missing", message: "Заполните «Мою организацию»" });
+  }
+  const ld = d.loading || {};
+  return { saved_at: w.saved_at || new Date().toISOString(), status: w.status, progress: [filled, total], problems,
+    computed: { "loading.arrived": ld.arrived, "loading.departed": ld.departed, "loading.gross": ld.gross,
+      "loading.places": ld.places, "order.date": (d.order || {}).date, "instructions.readdress_phone": (d.instructions || {}).readdress_phone } };
+}
+
+// ---------- справочники пополняются сами ----------
+function remember(data) {
+  const d = normalize(data);
+  for (const k of ["shipper", "consignee", "carrier", "customer", "loader", "infra"]) {
+    if (d[k + "_mode"] === "mine") continue;
+    const p = d[k] || {}; const inn = String(p.inn || "").replace(/\D/g, "");
+    if (!innOk(inn) || isEmptyV(p.kind === "ul" ? p.name : p.last)) continue;
+    const row = { kind: p.kind, inn, name: p.name || "", kpp: p.kpp || "", last: p.last || "", first: p.first || "", middle: p.middle || "", phone: p.phone || "", address: p.address || "" };
+    const i = DB.parties.findIndex((x) => x.inn === inn);
+    if (i >= 0) DB.parties[i] = { ...DB.parties[i], ...Object.fromEntries(Object.entries(row).filter(([, v]) => v)) }; else DB.parties.push(row);
+  }
+  for (const [v, tr] of [[d.vehicle || {}, false], ...(d.trailers || []).map((t) => [t, true])]) {
+    const reg = String(v.reg || "").replace(/\s/g, "").toUpperCase();
+    if (reg.length < 8 || !v.brand) continue;
+    const row = { reg, brand: v.brand, type: v.type || "", capacity: v.capacity || "", volume: v.volume || "", ownership: v.ownership || "1", is_trailer: tr };
+    const i = DB.vehicles.findIndex((x) => x.reg === reg); if (i >= 0) DB.vehicles[i] = row; else DB.vehicles.push(row);
+  }
+  for (const r of d.drivers || []) {
+    if (!r.last || !r.first || String(r.phone || "").replace(/\D/g, "").length < 10) continue;
+    const i = DB.drivers.findIndex((x) => x.last === r.last && x.first === r.first && (x.middle || "") === (r.middle || ""));
+    const row = { last: r.last, first: r.first, middle: r.middle || "", phone: r.phone, license: r.license || "" };
+    if (i >= 0) DB.drivers[i] = row; else DB.drivers.push(row);
+  }
+  for (const k of ["loading_addr", "delivery"]) {
+    const a = d[k] || {}; if (!a.index) continue;
+    const text = addrText(a); const parts = clone(a); delete parts.comment;
+    if (!DB.places.some((x) => x.address === text)) DB.places.push({ address: text, parts });
+  }
+}
+const REG = Object.fromEntries(REGIONS);
+function addrText(a) {
+  if (!a) return "";
+  if (a.type === "foreign") return a.text || "";
+  return [a.index, REG[a.region], a.district, a.city, a.locality, a.street, a.house && "д. " + a.house, a.building && "корп. " + a.building].filter(Boolean).join(", ");
+}
+
+// ---------- «сервер» для формы ----------
+const realFetch = window.fetch.bind(window);
+const reply = (obj, status = 200) => Promise.resolve(new Response(typeof obj === "string" ? obj : JSON.stringify(obj),
+  { status, headers: { "Content-Type": typeof obj === "string" ? "application/xml" : "application/json" } }));
+window.fetch = (url, opt = {}) => {
+  const u = new URL(url, location.href); const p = u.pathname; let m;
+  if ((m = p.match(/\/api\/(\d+)\/save\/$/))) {
+    const w = DB.waybills.find((x) => x.id === +m[1]); const data = JSON.parse(opt.body).data;
+    w.data = data; w.number = String(data.number || ""); w.date = data.date; w.saved_at = new Date().toISOString();
+    if (w.status === "ready") w.status = "draft";
+    remember(data); persist(); return reply(stateFor(w));
+  }
+  if (p.endsWith("/api/suggest/")) {
+    const t = u.searchParams.get("type"), q = (u.searchParams.get("q") || "").toLowerCase(), qd = q.replace(/\D/g, "");
+    let items = [];
+    if (t === "party") items = DB.parties.filter((x) => !q || (qd && x.inn.startsWith(qd)) || (x.name + " " + x.last).toLowerCase().includes(q))
+      .map((x) => ({ label: shortName(x), sub: "ИНН " + x.inn, value: x }));
+    if (t === "vehicle" || t === "trailer") items = DB.vehicles.filter((x) => x.is_trailer === (t === "trailer") && (!q || (x.reg + x.brand).toLowerCase().includes(q.replace(/\s/g, ""))))
+      .map((x) => ({ label: x.reg, sub: [x.brand, x.type].filter(Boolean).join(" "), value: x }));
+    if (t === "driver") items = DB.drivers.filter((x) => !q || x.last.toLowerCase().startsWith(q) || (qd.length >= 3 && x.phone.replace(/\D/g, "").includes(qd)))
+      .map((x) => ({ label: `${x.last} ${x.first} ${x.middle}`.trim(), sub: x.phone, value: x }));
+    if (t === "place") items = DB.places.filter((x) => !q || x.address.toLowerCase().includes(q)).map((x) => ({ label: x.address, sub: "", value: x.parts }));
+    return reply({ items: items.slice(0, 8) });
+  }
+  if (p.endsWith("/api/inn/")) {
+    const inn = (u.searchParams.get("inn") || "").replace(/\D/g, "");
+    if (!innOk(inn)) return reply({ found: false, error: "ИНН с ошибкой" });
+    const own = DB.parties.find((x) => x.inn === inn) || (DB.org.inn === inn ? DB.org : null);
+    if (own) return reply({ found: true, source: "справочника", value: own });
+    if (REGISTRY[inn]) return reply({ found: true, source: "ЕГРЮЛ", value: REGISTRY[inn] });
+    return reply({ found: false });
+  }
+  if ((m = p.match(/\/(\d+)\/xml\/$/))) {
+    const w = DB.waybills.find((x) => x.id === +m[1]); const st = stateFor(w);
+    if (st.problems.length) return reply({ problems: st.problems }, 422);
+    w.status = "ready"; remember(w.data); persist(); return reply(SAMPLE_XML);
+  }
+  return realFetch(url, opt);
+};
+
+// ---------- страницы ----------
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const OPF = [["ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ", "ООО"], ["ПУБЛИЧНОЕ АКЦИОНЕРНОЕ ОБЩЕСТВО", "ПАО"], ["АКЦИОНЕРНОЕ ОБЩЕСТВО", "АО"]];
+function shortName(p) {
+  p = p || {};
+  if (p.kind === "ip" || p.kind === "fl" || (!p.name && p.last))
+    return ((p.kind === "ip" ? "ИП " : "") + (p.last || "") + [p.first, p.middle].filter(Boolean).map((x) => " " + x[0] + ".").join("")).trim();
+  let n = (p.name || "").trim();
+  for (const [f, s] of OPF) if (n.toUpperCase().startsWith(f)) return s + n.slice(f.length);
+  return n;
+}
+function partyOf(w, k) { return w.data[k + "_mode"] === "mine" ? DB.org : (w.data[k] || {}); }
+function nav(active) {
+  document.querySelectorAll(".top-nav a").forEach((a) => a.classList.toggle("on", a.dataset.v === active));
+}
+function nextNumber() { return String(Math.max(0, ...DB.waybills.map((w) => +w.number || 0)) + 1); }
+function newWaybill(from) {
+  let data;
+  if (from) {
+    data = clone(from.data); delete data.order;
+    const ld = (data.loading ||= {}); delete ld.planned; delete ld.arrived; delete ld.departed;
+  } else {
+    const last = [...DB.waybills].sort((a, b) => b.created - a.created)[0];
+    data = { tz: "+09:00", shipper_mode: "mine", consignee_mode: "other", carrier_mode: "other" };
+    if (last) for (const k of ["shipper_mode", "loading_addr", "loader_worker", "signer"]) if (last.data[k]) data[k] = clone(last.data[k]);
+    data.loading = { loader_mode: "shipper" };
+  }
+  data.number = nextNumber(); data.date = today();
+  const id = ++DB.seq;
+  DB.waybills.push({ id, number: data.number, date: data.date, status: "draft", data, created: id });
+  persist(); location.hash = "#/w/" + id;
+}
+
+function viewList() {
+  nav("list"); document.body.classList.remove("editor-page");
+  const rows = [...DB.waybills].sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.created - a.created);
+  $app.innerHTML = `<main class="page">
+    <div class="page-head"><h1>Накладные</h1>
+      <button class="btn primary" id="new-wb">Новая накладная</button></div>
+    <div class="scroll-x"><table class="list">
+      <thead><tr><th>Дата</th><th>Отправитель</th><th>Получатель</th><th>Перевозчик</th><th>Маршрут</th><th>Машина</th><th>Статус</th><th></th></tr></thead>
+      <tbody>${rows.map((w) => {
+        const st = stateFor(w); const pct = st.progress[1] ? Math.round(100 * st.progress[0] / st.progress[1]) : 0;
+        const a = (w.data.loading_addr || {}).city || "", b = (w.data.delivery || {}).city || "";
+        const chip = w.status === "ready" ? '<span class="chip s-ready">Готова</span>'
+          : pct === 100 ? '<span class="chip s-ready">Заполнена</span>' : `<span class="chip s-draft">Черновик ${pct}%</span>`;
+        return `<tr data-id="${w.id}">
+          <td class="nowrap">${esc((w.date || "").split("-").reverse().join("."))}</td>
+          <td>${esc(shortName(partyOf(w, "shipper")))}</td><td>${esc(shortName(partyOf(w, "consignee")))}</td>
+          <td>${esc(shortName(partyOf(w, "carrier")))}</td><td>${esc(a)}${a && b ? " – " : ""}${esc(b)}</td>
+          <td class="nowrap">${esc(String((w.data.vehicle || {}).reg || "").replace(/\s/g, "").toUpperCase())}</td>
+          <td>${chip}</td>
+          <td class="actions"><button class="btn sm" data-copy="${w.id}">Создать на основе</button>
+            ${w.status !== "ready" ? `<button class="btn sm ghost" data-del="${w.id}">Удалить</button>` : ""}</td></tr>`;
+      }).join("")}</tbody></table></div></main>`;
+  document.getElementById("new-wb").onclick = () => newWaybill(null);
+  $app.querySelectorAll("tbody tr").forEach((tr) => tr.onclick = (e) => {
+    const c = e.target.closest("[data-copy]"), d = e.target.closest("[data-del]");
+    if (c) return newWaybill(DB.waybills.find((w) => w.id === +c.dataset.copy));
+    if (d) { if (confirm("Удалить черновик?")) { DB.waybills = DB.waybills.filter((w) => w.id !== +d.dataset.del); persist(); viewList(); } return; }
+    location.hash = "#/w/" + tr.dataset.id;
+  });
+}
+
+function viewEditor(id) {
+  const w = DB.waybills.find((x) => x.id === id); if (!w) { location.hash = "#/"; return; }
+  nav("list"); document.body.classList.add("editor-page");
+  $app.innerHTML = `<input type="hidden" name="csrfmiddlewaretoken" value="demo">
+  <div class="ed-bar"><a href="#/" class="back" aria-label="К списку">←</a>
+    <div class="ed-title">Накладная <b id="t-num">№ ${esc(w.number)}</b></div>
+    <div class="save-state" id="save-state">Сохранено</div>
+    <div class="ed-actions"><button class="btn primary" id="btn-xml">Сформировать XML</button></div></div>
+  <div class="ed-wrap"><aside class="ed-nav"><div class="progress-box"><div class="progress-num" id="p-num"></div>
+    <div class="bar big"><i id="p-bar"></i></div><div class="muted small" id="p-hint"></div></div><ol id="nav"></ol></aside>
+    <main class="ed-form" id="form"></main></div>`;
+  startEditor({ id: w.id, data: w.data, spec: { sections: SPEC }, state: stateFor(w), org: DB.org });
+  window.scrollTo(0, 0);
+}
+
+function viewDir() {
+  nav("dir"); document.body.classList.remove("editor-page");
+  const tbl = (head, rows) => rows.length ? `<div class="scroll-x"><table class="list plain"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}<th></th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<div class="empty-state card">Пусто</div>';
+  const del = (k, i) => `<td class="actions"><button class="btn sm ghost" data-k="${k}" data-i="${i}">Удалить</button></td>`;
+  $app.innerHTML = `<main class="page"><div class="page-head"><h1>Справочники</h1></div>
+    <p class="muted dir-note">Пополняются сами из накладных — ничего не нужно вводить повторно.</p>
+    <h2 class="dir-h">Контрагенты</h2>${tbl(["Название", "ИНН", "КПП", "Телефон"], DB.parties.map((p, i) => `<tr><td>${esc(shortName(p))}</td><td class="nowrap">${esc(p.inn)}</td><td>${esc(p.kpp)}</td><td class="nowrap">${esc(p.phone)}</td>${del("parties", i)}</tr>`))}
+    <h2 class="dir-h">Машины и прицепы</h2>${tbl(["Госномер", "Марка", "Тип", "Т", "М³"], DB.vehicles.map((v, i) => `<tr><td class="nowrap">${esc(v.reg)}</td><td>${esc(v.brand)}</td><td>${esc(v.type)}</td><td>${esc(v.capacity)}</td><td>${esc(v.volume)}</td>${del("vehicles", i)}</tr>`))}
+    <h2 class="dir-h">Водители</h2>${tbl(["ФИО", "Телефон"], DB.drivers.map((d, i) => `<tr><td>${esc([d.last, d.first, d.middle].join(" "))}</td><td class="nowrap">${esc(d.phone)}</td>${del("drivers", i)}</tr>`))}
+  </main>`;
+  $app.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => { DB[b.dataset.k].splice(+b.dataset.i, 1); persist(); viewDir(); });
+}
+
+function viewOrg() {
+  nav("org"); document.body.classList.remove("editor-page");
+  const o = DB.org;
+  const row = (lbl, inner, req, cls = "") => `<div class="frow ${cls}"><span class="lbl${req ? " req" : ""}">${lbl}</span><div class="ctl">${inner}</div></div>`;
+  const inp = (n, ph, cls = "") => `<div class="field cell ${cls}"><input id="org-${n}" name="${n}" value="${esc(o[n])}" placeholder="${ph}"></div>`;
+  $app.innerHTML = `<main class="page"><div class="page-head"><h1>Моя организация</h1></div>
+    <form class="card sec settings" id="org-form">
+      ${row("Тип", `<div class="field cell"><div class="radios">
+        <label class="radio"><input type="radio" name="kind" value="ul" ${o.kind !== "ip" ? "checked" : ""}> Организация</label>
+        <label class="radio"><input type="radio" name="kind" value="ip" ${o.kind === "ip" ? "checked" : ""}> Индивидуальный предприниматель</label></div></div>`)}
+      ${row("ИНН–КПП", inp("inn", "ИНН", "short") + '<span class="sep ul-only">–</span>' + inp("kpp", "КПП", "short ul-only"), true)}
+      ${row("Организация", inp("name", ""), true, "ul-only")}
+      ${row("ФИО", inp("last", "Фамилия") + inp("first", "Имя") + inp("middle", "Отчество"), true, "ip-only")}
+      ${row("Юридический адрес", inp("address", ""), false, "ul-only")}
+      ${row("Телефон", inp("phone", "", "short"), true)}
+      <div class="org-actions"><button class="btn primary" type="submit">Сохранить</button><span class="ok-msg" id="org-ok" hidden>Сохранено</span></div>
+    </form></main>`;
+  const f = document.getElementById("org-form");
+  const sync = () => { const k = f.kind.value; f.querySelectorAll(".ul-only").forEach((e) => (e.hidden = k !== "ul")); f.querySelectorAll(".ip-only").forEach((e) => (e.hidden = k !== "ip")); };
+  f.querySelectorAll("[name=kind]").forEach((r) => (r.onchange = sync)); sync();
+  f.onsubmit = (e) => {
+    e.preventDefault();
+    DB.org = { kind: f.kind.value, ...Object.fromEntries(["inn", "kpp", "name", "last", "first", "middle", "address", "phone"].map((k) => [k, f[k].value.trim()])) };
+    persist(); document.getElementById("org-ok").hidden = false;
+  };
+}
+
+function route() {
+  const h = location.hash;
+  if (!h.startsWith("#/")) return;  // якоря внутри формы (#s-shipper) — не маршруты
+  let m;
+  if ((m = h.match(/^#\/w\/(\d+)/))) viewEditor(+m[1]);
+  else if (h.startsWith("#/dir")) viewDir();
+  else if (h.startsWith("#/org")) viewOrg();
+  else viewList();
+}
+window.addEventListener("hashchange", route);
+document.getElementById("reset-demo").onclick = () => { if (confirm("Вернуть демо к исходным примерам?")) { DB = seed(); persist(); location.hash = "#/"; viewList(); } };
+function showXml(text) {
+  document.getElementById("xml-pre").textContent = text;
+  document.getElementById("xml-modal").hidden = false;
+}
+document.getElementById("xml-close").onclick = () => (document.getElementById("xml-modal").hidden = true);
+if (!location.hash.startsWith("#/")) location.hash = "#/";
+route();
+
+</script>
+</body></html>
