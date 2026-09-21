@@ -881,6 +881,7 @@ function startEditor(boot) {
 <script>
 /* Демо без сервера: хранилище в браузере, те же проверки, что на сервере (упрощённый перенос build.problems). */
 const LS = "etrn-demo-v1";
+const LOOKUP = "https://89.124.89.110.sslip.io/inn-lookup";
 const today = () => new Date().toISOString().slice(0, 10);
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const isEmptyV = (v) => v == null || (typeof v === "string" && !v.trim());
@@ -1062,7 +1063,9 @@ window.fetch = (url, opt = {}) => {
     const own = DB.parties.find((x) => x.inn === inn) || (DB.org.inn === inn ? DB.org : null);
     if (own) return reply({ found: true, source: "справочника", value: own });
     if (REGISTRY[inn]) return reply({ found: true, source: "ЕГРЮЛ", value: REGISTRY[inn] });
-    return reply({ found: false });
+    // настоящий ЕГРЮЛ — через посредник на нашем сервере (ключ DaData хранится там, в страницу не попадает)
+    return realFetch(LOOKUP + "?inn=" + inn).then((r) => r.ok || r.status === 429 ? r : reply({ found: false }))
+      .catch(() => reply({ found: false, error: "Реестр недоступен" }));
   }
   if ((m = p.match(/\/(\d+)\/xml\/$/))) {
     const w = DB.waybills.find((x) => x.id === +m[1]); const st = stateFor(w);
