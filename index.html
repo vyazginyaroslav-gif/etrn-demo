@@ -300,6 +300,8 @@ h3.grp { font-size: 16px; margin: 22px 0 14px; font-weight: 700; }
 .settings { max-width: 900px; display: block; }
 .settings .msg { display: block; color: var(--muted); font-weight: 400; }
 
+#nav a.here { background: var(--surface); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+
 
 body { background: var(--bg); }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; flex-wrap: wrap; }
@@ -667,7 +669,8 @@ function startEditor(boot) {
       const c = perSec[s.id];
       const badge = !c ? h("span", { class: "cnt ok" }, "✓")
         : c.bad ? h("span", { class: "cnt bad" }, `${c.bad + c.need} !`) : h("span", { class: "cnt" }, String(c.need));
-      return h("li", {}, h("a", { href: "#s-" + s.id, onclick: (e) => { e.preventDefault(); goSection(s.id); } }, s.title, badge));
+      return h("li", {}, h("a", { href: "#s-" + s.id, "data-sec": s.id,
+        onclick: (e) => { e.preventDefault(); goSection(s.id); } }, s.title, badge));
     }));
     document.querySelectorAll("[data-sec]").forEach((el) => {
       const c = perSec[el.dataset.sec];
@@ -682,6 +685,19 @@ function startEditor(boot) {
     btn.textContent = probs.length ? `Осталось ${probs.length} ${plural(probs.length, "поле", "поля", "полей")}` : "Сформировать XML";
     btn.className = "btn " + (probs.length ? "warn" : "primary");
     document.getElementById("t-num").textContent = "№ " + (data.number || "—");
+    markHere();
+  }
+
+  // какой раздел сейчас на экране — подсвечиваем его в списке слева
+  function markHere() {
+    const line = window.scrollY + 170;
+    let cur = SPEC[0] && SPEC[0].id;
+    for (const s of SPEC) {
+      const el = document.getElementById("s-" + s.id);
+      if (el && el.getBoundingClientRect().top + window.scrollY <= line) cur = s.id;
+    }
+    const nav = document.getElementById("nav");  // берём из документа: редактор мог быть перерисован
+    if (nav) nav.querySelectorAll("a").forEach((a) => a.classList.toggle("here", a.dataset.sec === cur));
   }
 
   function plural(n, one, few, many) {
@@ -872,6 +888,16 @@ function startEditor(boot) {
     const el = document.getElementById("toast");
     el.textContent = text; el.hidden = false;
     clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 5000);
+  }
+
+  if (!window.__etrnScroll) {  // один слушатель на страницу, даже если редактор открывали много раз
+    window.__etrnScroll = true;
+    let tick = false;
+    addEventListener("scroll", () => {
+      if (tick) return;
+      tick = true;
+      requestAnimationFrame(() => { tick = false; if (document.getElementById("nav")) markHere(); });
+    }, { passive: true });
   }
 
   render();
