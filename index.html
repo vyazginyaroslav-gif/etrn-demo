@@ -362,7 +362,8 @@ const DEMO = {"org": {"kind": "ul", "inn": "7714177768", "kpp": "280101001", "na
 /* Редактор накладной: рисует форму по описанию полей с сервера, сохраняет черновик сам. */
 function startEditor(boot) {
   "use strict";
-  const SPEC = boot.spec.sections;
+  // разделы, где все поля скрытые (как «Подписант» — его добавляет оператор при подписании), не показываем
+  const SPEC = boot.spec.sections.filter((s) => s.repeat || s.fields.some((f) => f.tier !== "hidden"));
   const ID = boot.id;
   let data = boot.data || {};
   let state = boot.state;
