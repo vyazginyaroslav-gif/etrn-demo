@@ -474,7 +474,7 @@ function startEditor(boot) {
           h("div", { class: "item-head" },
             h("span", {}, items.length > 1 || s.optional_repeat ? `${s.item || s.title} ${i + 1}` : ""),
             h("span", { class: "item-actions" },
-              h("button", { class: "link", type: "button", title: "Добавить такой же ниже",
+              s.repeat !== "cargo" ? null : h("button", { class: "link", type: "button", title: "Добавить такой же ниже",
                 onclick: () => { items.splice(i + 1, 0, JSON.parse(JSON.stringify(items[i]))); changed(true); } }, "Копировать"),
               canRemove ? h("button", { class: "link danger", type: "button",
                 onclick: () => { items.splice(i, 1); changed(true); } }, "Убрать") : null)),
