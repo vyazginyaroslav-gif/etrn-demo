@@ -359,7 +359,7 @@ body { background: var(--bg); }
 <div class="modal" id="xml-modal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="xml-title">
     <div class="modal-head"><div><b id="xml-title">XML титула Т1 для оператора ЭДО</b>
-      <p class="muted small">Формат ФНС 5.01, проходит официальную проверку. В демо показан файл примера.</p></div>
+      <p class="muted small">Формат ФНС 5.01, проверен по официальной схеме. Файл скачан — его можно загрузить оператору («Загрузить XML» в Контуре).</p></div>
       <button class="btn sm" id="xml-close" type="button">Закрыть</button></div>
     <pre id="xml-pre"></pre>
   </div>
@@ -960,7 +960,9 @@ function startEditor(boot) {
       toast("Не удалось собрать XML: " + (js.xsd_errors || [r.status]).join("; "));
       return;
     }
-    showXml(await r.text());
+    const cd = r.headers.get("Content-Disposition") || "";
+    const name = decodeURIComponent((cd.match(/filename\*=UTF-8''([^;]+)/) || [])[1] || `ETRN_${ID}.xml`);
+    showXml(await r.arrayBuffer(), name);
   });
 
   function toast(text) {
@@ -987,6 +989,7 @@ function startEditor(boot) {
 /* Демо без сервера: хранилище в браузере, те же проверки, что на сервере (упрощённый перенос build.problems). */
 const LS = "etrn-demo-v1";
 const LOOKUP = "https://89.124.89.110.sslip.io/inn-lookup";
+const XML_URL = "https://89.124.89.110.sslip.io/etrn-xml";  // XML собирает наш сервер тем же кодом, что приложение
 const today = () => new Date().toISOString().slice(0, 10);
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const isEmptyV = (v) => v == null || (typeof v === "string" && !v.trim());
@@ -1176,7 +1179,10 @@ window.fetch = (url, opt = {}) => {
   if ((m = p.match(/\/(\d+)\/xml\/$/))) {
     const w = DB.waybills.find((x) => x.id === +m[1]); const st = stateFor(w);
     if (st.problems.length) return reply({ problems: st.problems }, 422);
-    w.status = "ready"; remember(w.data); persist(); return reply(SAMPLE_XML);
+    return realFetch(XML_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: w.data, org: DB.org }) })
+      .then((r) => { if (r.ok) { w.status = "ready"; remember(w.data); persist(); } return r; })
+      .catch(() => reply({ xsd_errors: ["Сервер сборки XML недоступен"] }, 503));
   }
   return realFetch(url, opt);
 };
@@ -1313,7 +1319,11 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 document.getElementById("reset-demo").onclick = () => { if (confirm("Вернуть демо к исходным примерам?")) { DB = seed(); persist(); location.hash = "#/"; viewList(); } };
-function showXml(text) {
+function showXml(bytes, name) {  // bytes — как отдал сервер (windows-1251); скачиваем их без перекодировки
+  const text = new TextDecoder("windows-1251").decode(bytes);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes], { type: "application/xml" })); a.download = name || "ETRN.xml";
+  document.body.append(a); a.click(); a.remove();
   document.getElementById("xml-pre").textContent = text;
   document.getElementById("xml-modal").hidden = false;
 }
