@@ -1251,11 +1251,7 @@ function normalize(data) {
   if (isEmptyV(g(d, "order.number"))) pt(d, "order.number", d.number || "Без номера");
   if (isEmptyV(g(d, "order.date"))) pt(d, "order.date", d.date);
   const ld = (d.loading ||= {});
-  if (isEmptyV(ld.arrived)) ld.arrived = ld.planned;
-  if (isEmptyV(ld.departed) && ld.arrived) {
-    const t = new Date(ld.arrived); t.setHours(t.getHours() + 1);
-    if (!isNaN(t)) ld.departed = new Date(t - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-  }
+
   const sum = (k) => { const a = d.cargo.map((c) => num(c[k])); return a.every((x) => x != null) ? a.reduce((x, y) => x + y, 0) : null; };
   if (isEmptyV(ld.gross) && sum("weight") != null) ld.gross = String(sum("weight"));
   if (isEmptyV(ld.places) && sum("places") != null) ld.places = String(sum("places"));
@@ -1292,7 +1288,7 @@ function stateFor(w) {
   }
   const ld = d.loading || {};
   return { saved_at: w.saved_at || new Date().toISOString(), status: w.status, progress: [filled, total], problems,
-    computed: { "loading.arrived": ld.arrived, "loading.departed": ld.departed, "loading.gross": ld.gross,
+    computed: { "loading.gross": ld.gross,
       "loading.places": ld.places, "order.date": (d.order || {}).date, "order.number": (d.order || {}).number, "instructions.readdress_phone": (d.instructions || {}).readdress_phone } };
 }
 
