@@ -400,6 +400,22 @@ function startEditor(boot) {
   const SPEC = boot.spec.sections.filter((s) => s.repeat || s.fields.some((f) => f.tier !== "hidden"));
   const ID = boot.id;
   let data = boot.data || {};
+
+  // Заказ-заявка повторяет номер и дату накладной, пока человек не впишет своё (order.auto_* — связка держится).
+  function syncOrder(path) {
+    const o = (data.order ||= {});
+    for (const [src, dst, flag] of [["number", "number", "auto_number"], ["date", "date", "auto_date"]]) {
+      if (path === "order." + dst) o[flag] = isEmpty(o[dst]) || o[dst] === data[src];  // стёр или совпало — снова связка
+      if (path === src && o[flag]) { o[dst] = data[src]; const el = $form.querySelector(`[data-key="order.${dst}"]`); if (el) { el.value = data[src] || ""; mark(el.closest(".field"), SPEC.flatMap((x) => x.fields).find((x) => x.path === "order." + dst), el.value); } }
+    }
+  }
+  function initOrder() {  // при открытии: пустое — заполнить и связать; заполненное как у накладной — связать
+    const o = (data.order ||= {});
+    for (const [k, flag] of [["number", "auto_number"], ["date", "auto_date"]]) {
+      if (o[flag] === undefined) o[flag] = isEmpty(o[k]) || o[k] === data[k];
+      if (o[flag]) o[k] = data[k];
+    }
+  }
   let state = boot.state;
   const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
   const $form = document.getElementById("form");
@@ -598,6 +614,7 @@ function startEditor(boot) {
         innTyped(innF, idx, digits, true); render();
       }
       mark(e.target.closest(".field"), f, val);
+      syncOrder(f.path);
       const refDep = /^shipper\./.test(f.path) && e.type === "change";  // обновить карточку «Грузит»
       changed((DEPS.has(f.path) && (e.type === "change" || f.type === "select" || f.type === "radio")) || refDep);
     };
@@ -1013,6 +1030,7 @@ function startEditor(boot) {
     }, { passive: true });
   }
 
+  initOrder();
   render();
 }
 
