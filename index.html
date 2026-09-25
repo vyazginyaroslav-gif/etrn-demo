@@ -324,6 +324,18 @@ h3.grp { font-size: 16px; margin: 22px 0 14px; font-weight: 700; }
 .xml-left { color: #7a4d00; background: var(--need); border-radius: 8px; padding: 6px 10px; font-weight: 600; white-space: nowrap; }
 .xml-left:hover { text-decoration: none; filter: brightness(.97); }
 
+/* «Мои / Все сотрудники» у директора */
+.who { display: flex; gap: 4px; background: var(--line); border-radius: 8px; padding: 3px; }
+.who a { padding: 5px 12px; border-radius: 6px; color: var(--muted); font-weight: 600; }
+.who a.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.who a:hover { text-decoration: none; }
+
+/* узкие формы (вход, заявка, приглашение): подпись над полем */
+.login .field { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.login .field > .lbl { padding: 0; font-size: 13px; color: var(--muted); }
+.login .field > input { width: 100%; }
+.login h1 { font-size: 20px; }
+
 
 body { background: var(--bg); }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; flex-wrap: wrap; }
@@ -596,6 +608,10 @@ function startEditor(boot) {
         h("label", { class: "radio" + (v === val ? " on" : "") },
           h("input", { type: "radio", name: k, value: val, checked: v === val, "data-key": i === 0 ? k : null,
             onchange: onInput }), lbl)));
+    } else if (f.type === "select" && f.options.length > 8) {
+      // длинные списки (регион, страна, тара) — поле с поиском по буквам, как в Контуре
+      const real = f.options.filter(([val]) => val !== "");
+      input = comboEl({ ...f, options: real, all: real, ph: f.ph || (f.options[0][1].replace(/^—\s*|\s*—$/g, "") || "Начните вводить") }, idx, k, v);
     } else if (f.type === "select") {
       input = h("select", { "data-key": k, onchange: onInput },
         f.options.map(([val, lbl]) => h("option", { value: val, selected: v === val }, lbl)));
@@ -685,16 +701,17 @@ function startEditor(boot) {
       close();
       const common = f.options.some((x) => x[0] === o[0]);
       put(data, f.path, o[0], idx);
-      put(data, f.path + "_text", common ? "" : o[1], idx);  // для редкой тары в «Способ упаковки» идёт её название
-      inp.value = labelOf(o[0]); mark(inp.closest(".field"), f, o[0]); changed(false);
+      if (f.type === "combo") put(data, f.path + "_text", common ? "" : o[1], idx);  // для редкой тары в «Способ упаковки» идёт её название
+      inp.value = labelOf(o[0]); mark(inp.closest(".field"), f, o[0]); changed(DEPS.has(f.path));
     };
     const show = () => {
       close();
       const q = inp.value.trim().toLowerCase();
       const cur = labelOf(get(data, f.path, idx)).toLowerCase();
+      const lim = f.type === "select" ? 400 : 12;
       items = !q || q === cur ? f.options
         : [...f.options.filter((o) => o[1].toLowerCase().includes(q)),
-           ...f.all.filter((o) => (o[1].toLowerCase().includes(q) || o[0].toLowerCase() === q) && !f.options.some((x) => x[0] === o[0]))].slice(0, 12);
+           ...f.all.filter((o) => (o[1].toLowerCase().includes(q) || o[0].toLowerCase() === q) && !f.options.some((x) => x[0] === o[0]))].slice(0, lim);
       if (!items.length) items = [];
       box = h("div", { class: "dd" }, items.length ? items.map((o, i) =>
         h("div", { class: i === on ? "on" : "", onmousedown: (e) => { e.preventDefault(); pick(o); } }, o[1], h("small", {}, o[0])))
