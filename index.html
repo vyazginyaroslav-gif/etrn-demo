@@ -1401,9 +1401,10 @@ function newWaybill(from) {
     data = clone(from.data); delete data.order;
     const ld = (data.loading ||= {}); delete ld.planned; delete ld.arrived; delete ld.departed;
   } else {
-    const last = [...DB.waybills].sort((a, b) => b.created - a.created)[0];
-    data = { tz: "+09:00", shipper_mode: "mine", consignee_mode: "other", carrier_mode: "other" };
-    if (last) for (const k of ["shipper_mode", "loading_addr", "loader_worker", "signer"]) if (last.data[k]) data[k] = clone(last.data[k]);
+    // новая — чистая; повторить прошлую — «Создать на основе». Пояс — по часам компьютера
+    const h = -new Date().getTimezoneOffset() / 60;
+    const tz = Number.isInteger(h) && h >= 2 && h <= 12 ? `+${String(h).padStart(2, "0")}:00` : "+03:00";
+    data = { tz, shipper_mode: DB.org && DB.org.inn ? "mine" : "other", consignee_mode: "other", carrier_mode: "other" };
     data.loading = { loader_mode: "shipper" };
   }
   data.number = nextNumber(); data.date = today();
