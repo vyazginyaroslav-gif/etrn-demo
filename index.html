@@ -1303,7 +1303,7 @@ function remember(data) {
     if (d[k + "_mode"] === "mine") continue;
     const p = d[k] || {}; const inn = String(p.inn || "").replace(/\D/g, "");
     if (!innOk(inn) || isEmptyV(p.kind === "ul" ? p.name : p.last)) continue;
-    const row = { kind: p.kind, inn, name: p.name || "", kpp: p.kpp || "", last: p.last || "", first: p.first || "", middle: p.middle || "", phone: p.phone || "", address: p.address || "" };
+    const row = { kind: p.kind, inn, name: p.name || "", kpp: p.kpp || "", last: p.last || "", first: p.first || "", middle: p.middle || "", phone: p.phone || "", address: p.address || "", addr: p.addr || null, ogrn: p.ogrn || "" };
     const i = DB.parties.findIndex((x) => x.inn === inn);
     if (i >= 0) DB.parties[i] = { ...DB.parties[i], ...Object.fromEntries(Object.entries(row).filter(([, v]) => v)) }; else DB.parties.push(row);
   }
@@ -1360,7 +1360,12 @@ window.fetch = (url, opt = {}) => {
     const inn = (u.searchParams.get("inn") || "").replace(/\D/g, "");
     if (!innOk(inn)) return reply({ found: false, error: "ИНН с ошибкой" });
     const own = DB.parties.find((x) => x.inn === inn) || (DB.org.inn === inn ? DB.org : null);
-    if (own) return reply({ found: true, source: "справочника", value: own });
+    if (own && own.addr && own.addr.index) return reply({ found: true, source: "справочника", value: own });
+    if (own) {  // в справочнике нет адреса по полям — берём из реестра, своё (телефон и т.п.) важнее
+      return realFetch(LOOKUP + "?inn=" + inn).then((r) => r.json()).then((j) => reply({ found: true, source: "справочника",
+        value: { ...(j.found ? j.value : {}), ...Object.fromEntries(Object.entries(own).filter(([, v]) => v)) } }))
+        .catch(() => reply({ found: true, source: "справочника", value: own }));
+    }
     if (REGISTRY[inn]) return reply({ found: true, source: "ЕГРЮЛ", value: REGISTRY[inn] });
     // настоящий ЕГРЮЛ — через посредник на нашем сервере (ключ DaData хранится там, в страницу не попадает)
     return realFetch(LOOKUP + "?inn=" + inn).then((r) => r.ok || r.status === 429 ? r : reply({ found: false }))
@@ -1491,9 +1496,19 @@ function viewOrg() {
   const f = document.getElementById("org-form");
   const sync = () => { const k = f.kind.value; f.querySelectorAll(".ul-only").forEach((e) => (e.hidden = k !== "ul")); f.querySelectorAll(".ip-only").forEach((e) => (e.hidden = k !== "ip")); };
   f.querySelectorAll("[name=kind]").forEach((r) => (r.onchange = sync)); sync();
+  f.inn.onchange = async () => {  // ИНН → реквизиты и юрадрес по полям из реестра (для XML нужен адрес по полям)
+    const inn = f.inn.value.replace(/\D/g, "");
+    if (!innOk(inn)) return;
+    const j = await realFetch(LOOKUP + "?inn=" + inn).then((r) => r.json()).catch(() => null);
+    if (!j || !j.found) return;
+    const v = j.value;
+    for (const k of ["kpp", "name", "last", "first", "middle", "address"]) if (v[k] && f[k] && !f[k].value.trim()) f[k].value = v[k];
+    f.kind.value = v.kind === "ip" ? "ip" : "ul"; sync();
+    DB.org = { ...DB.org, inn, addr: v.addr || null, ogrn: v.ogrn || "" };
+  };
   f.onsubmit = (e) => {
     e.preventDefault();
-    DB.org = { kind: f.kind.value, ...Object.fromEntries(["inn", "kpp", "name", "last", "first", "middle", "address", "phone"].map((k) => [k, f[k].value.trim()])) };
+    DB.org = { ...DB.org, kind: f.kind.value, ...Object.fromEntries(["inn", "kpp", "name", "last", "first", "middle", "address", "phone"].map((k) => [k, f[k].value.trim()])) };
     persist(); document.getElementById("org-ok").hidden = false;
   };
 }
