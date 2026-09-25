@@ -337,10 +337,9 @@ h3.grp { font-size: 16px; margin: 22px 0 14px; font-weight: 700; }
 .login h1 { font-size: 20px; }
 
 /* свой календарь: системную иконку прячем, открываем наш по клику в поле */
-input[type="date"]::-webkit-calendar-picker-indicator, input[type="datetime-local"]::-webkit-calendar-picker-indicator { display: none; }
-input[type="date"], input[type="datetime-local"] { cursor: pointer; padding-right: 30px;
+input.dt-input { cursor: pointer; padding-right: 30px;
   background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23667085' stroke-width='1.6'%3E%3Crect x='1.5' y='2.5' width='11' height='10' rx='1.5'/%3E%3Cpath d='M1.5 5.5h11M4.5 1v3M9.5 1v3'/%3E%3C/svg%3E") no-repeat right 10px center; }
-.field.t-main.is-empty > input[type="date"], .field.t-main.is-empty > input[type="datetime-local"] { background-color: var(--need); }
+.field.t-main.is-empty > input.dt-input { background-color: var(--need); }
 .dp { position: absolute; z-index: 80; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px;
   box-shadow: 0 12px 32px rgba(16, 24, 40, .16); padding: 12px; user-select: none; font-size: 13px; }
 .dp-main { display: flex; gap: 12px; }
@@ -426,12 +425,38 @@ function startEditor(boot) {
   const ID = boot.id;
   let data = boot.data || {};
 
+  // Даты храним как ISO (2026-09-24 / 2026-09-24T12:03), а в поле показываем по-русски — обычным текстом,
+  // чтобы браузер (Safari) не открывал свой маленький календарь поверх нашего.
+  const DT_PH = { date: "дд.мм.гггг", datetime: "дд.мм.гггг чч:мм" };
+  function isoToRu(v) {
+    const m = String(v || "").match(/^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/);
+    return m ? `${m[3]}.${m[2]}.${m[1]}` + (m[4] ? ` ${m[4]}:${m[5]}` : "") : "";
+  }
+  function ruToIso(t, withTime) {
+    const m = String(t || "").trim().match(/^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?$/);
+    if (!m) return null;
+    const d = new Date(+m[3], +m[2] - 1, +m[1]);
+    if (d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[1]) return null;
+    if (!withTime) return m[4] ? null : `${m[3]}-${m[2]}-${m[1]}`;
+    if (!m[4] || +m[4] > 23 || +m[5] > 59) return null;
+    return `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}`;
+  }
+  function maskDate(t, withTime) {  // «24092026 1203» → «24.09.2026 12:03» по мере набора
+    const d = String(t).replace(/\D/g, "").slice(0, withTime ? 12 : 8);
+    let out = d.slice(0, 2);
+    if (d.length > 2) out += "." + d.slice(2, 4);
+    if (d.length > 4) out += "." + d.slice(4, 8);
+    if (d.length > 8) out += " " + d.slice(8, 10);
+    if (d.length > 10) out += ":" + d.slice(10, 12);
+    return out;
+  }
+
   // Заказ-заявка повторяет номер и дату накладной, пока человек не впишет своё (order.auto_* — связка держится).
   function syncOrder(path) {
     const o = (data.order ||= {});
     for (const [src, dst, flag] of [["number", "number", "auto_number"], ["date", "date", "auto_date"]]) {
       if (path === "order." + dst) o[flag] = isEmpty(o[dst]) || o[dst] === data[src];  // стёр или совпало — снова связка
-      if (path === src && o[flag]) { o[dst] = data[src]; const el = $form.querySelector(`[data-key="order.${dst}"]`); if (el) { el.value = data[src] || ""; mark(el.closest(".field"), SPEC.flatMap((x) => x.fields).find((x) => x.path === "order." + dst), el.value); } }
+      if (path === src && o[flag]) { o[dst] = data[src]; const el = $form.querySelector(`[data-key="order.${dst}"]`); if (el) { el.value = dst === "date" ? isoToRu(data[src]) : (data[src] || ""); mark(el.closest(".field"), SPEC.flatMap((x) => x.fields).find((x) => x.path === "order." + dst), el.value); } }
     }
   }
   function initOrder() {  // при открытии: пустое — заполнить и связать; заполненное как у накладной — связать
@@ -628,6 +653,21 @@ function startEditor(boot) {
     let input;
     const onInput = (e) => {
       let val = f.type === "checkbox" ? e.target.checked : e.target.value;
+      if (f.type === "date" || f.type === "datetime") {
+        const wt = f.type === "datetime";
+        if (e.type === "input" && e.isTrusted) {
+          const pos = e.target.selectionStart, atEnd = pos === e.target.value.length;
+          const masked = maskDate(e.target.value, wt);
+          if (masked !== e.target.value && atEnd) e.target.value = masked;
+        }
+        const t = e.target.value.trim();
+        if (t && ruToIso(t, wt) === null) {  // недонабрано — ждём; на выходе из поля вернём прежнее
+          if (e.type === "change") e.target.value = isoToRu(get(data, f.path, idx));
+          return;
+        }
+        val = t ? ruToIso(t, wt) : "";
+        if (picker && picker.inp === e.target && e.type === "input") openPicker(e.target);  // календарь показывает набранное
+      }
       put(data, f.path, val, idx);
       if (f.type === "inn") innTyped(f, idx, val, e.type === "change");
       // в «Организацию» можно ввести ИНН, как в Контуре: переносим в ИНН и ищем
@@ -660,13 +700,15 @@ function startEditor(boot) {
     } else if (f.type === "checkbox") {
       input = h("input", { type: "checkbox", "data-key": k, checked: !!v, onchange: onInput });
     } else {
-      const type = f.type === "date" ? "date" : f.type === "datetime" ? "datetime-local" : "text";
+      const isDt = f.type === "date" || f.type === "datetime";
+      const type = "text";
       const mode = f.type === "temp" ? "text" : f.type === "inn" || f.type === "int" || f.type === "postcode" ? "numeric" : f.type === "number" ? "decimal"
         : f.type === "phone" ? "tel" : null;
       const comp = state.computed[f.path];
-      input = h("input", { type, inputmode: mode, "data-key": k, value: v ?? "", autocomplete: "off",
-        placeholder: !isEmpty(comp) ? "авто: " + fmtComp(comp, f) : null, oninput: onInput,
-        onchange: /^shipper\./.test(f.path) || f.type === "inn" || f.party_name ? onInput : null,
+      input = h("input", { type, inputmode: mode, "data-key": k, value: isDt ? isoToRu(v) : (v ?? ""), autocomplete: "off",
+        class: isDt ? "dt-input" : null, "data-dt": isDt ? f.type : null, "data-ph": isDt ? DT_PH[f.type] : null,
+        placeholder: !isEmpty(comp) ? "авто: " + fmtComp(comp, f) : (isDt ? DT_PH[f.type] : null), oninput: onInput,
+        onchange: isDt || /^shipper\./.test(f.path) || f.type === "inn" || f.party_name ? onInput : null,
         onkeydown: f.type === "inn" ? (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } } : null });
       if (f.suggest) attachPick(input, f, idx);
       const src = SUGGEST(f);
@@ -677,7 +719,7 @@ function startEditor(boot) {
         e.preventDefault();
         const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
         const val = d.toISOString().slice(0, 16);
-        put(data, f.path, val, idx); input.value = val; mark(input.closest(".field"), f, val); changed(false);
+        put(data, f.path, val, idx); input.value = isoToRu(val); mark(input.closest(".field"), f, val); changed(false);
       } }, "Сейчас") : null;
     if (f.ph && input.tagName === "INPUT" && !input.placeholder) input.placeholder = f.ph;
     const kids = f.type === "checkbox" ? [h("label", { class: "chk" }, input, f.label)] : [input, now];
@@ -917,7 +959,7 @@ function startEditor(boot) {
       const comp = state.computed[path];
       if (comp !== undefined) {
         const f = SPEC.flatMap((s) => s.fields).find((x) => x.path === path);
-        inp.placeholder = isEmpty(comp) ? "" : "авто: " + fmtComp(comp, f || {});
+        inp.placeholder = isEmpty(comp) ? (inp.dataset.ph || "") : "авто: " + fmtComp(comp, f || {});
       }
     });
   }
@@ -1062,8 +1104,9 @@ function startEditor(boot) {
   function closePicker() { if (picker) { picker.el.remove(); picker = null; } }
   function openPicker(inp) {
     closePicker();
-    const withTime = inp.type === "datetime-local";
-    let m = (inp.value || "").match(/^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/);
+    const withTime = inp.dataset.dt === "datetime";
+    const iso = ruToIso(inp.value, withTime) || ruToIso(inp.value.split(" ")[0], false);
+    let m = (iso || "").match(/^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/);
     const auto = !m && (inp.placeholder || "").match(/(\d\d)\.(\d\d)\.(\d{4})(?:\s+(\d\d):(\d\d))?/);  // пустое поле с «авто: …» — открыть на нём
     if (auto) m = [null, auto[3], auto[2], auto[1], auto[4], auto[5]];
     const now = new Date();
@@ -1072,7 +1115,7 @@ function startEditor(boot) {
     const view = { y: cur.y, mo: cur.mo };
     const el = h("div", { class: "dp", onmousedown: (e) => e.preventDefault() });
     const apply = (val) => {
-      inp.value = val;
+      inp.value = isoToRu(val);
       inp.dispatchEvent(new Event("input", { bubbles: true }));
       inp.dispatchEvent(new Event("change", { bubbles: true }));
       closePicker();
@@ -1119,11 +1162,12 @@ function startEditor(boot) {
     picker = { el, inp };
   }
   document.addEventListener("mousedown", (e) => {
-    const inp = e.target.closest && e.target.closest('input[type="date"], input[type="datetime-local"]');
+    const inp = e.target.closest && e.target.closest("input.dt-input");
     if (inp && !inp.disabled) { if (!picker || picker.inp !== inp) openPicker(inp); return; }
     if (picker && !picker.el.contains(e.target)) closePicker();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePicker(); });
+  document.addEventListener("focusin", (e) => { if (picker && e.target !== picker.inp && !picker.el.contains(e.target)) closePicker(); });
 
   initOrder();
   render();
