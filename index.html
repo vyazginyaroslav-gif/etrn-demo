@@ -336,6 +336,31 @@ h3.grp { font-size: 16px; margin: 22px 0 14px; font-weight: 700; }
 .login .field > input { width: 100%; }
 .login h1 { font-size: 20px; }
 
+/* свой календарь: системную иконку прячем, открываем наш по клику в поле */
+input[type="date"]::-webkit-calendar-picker-indicator, input[type="datetime-local"]::-webkit-calendar-picker-indicator { display: none; }
+input[type="date"], input[type="datetime-local"] { cursor: pointer; padding-right: 30px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23667085' stroke-width='1.6'%3E%3Crect x='1.5' y='2.5' width='11' height='10' rx='1.5'/%3E%3Cpath d='M1.5 5.5h11M4.5 1v3M9.5 1v3'/%3E%3C/svg%3E") no-repeat right 10px center; }
+.field.t-main.is-empty > input[type="date"], .field.t-main.is-empty > input[type="datetime-local"] { background-color: var(--need); }
+.dp { position: absolute; z-index: 80; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, .16); padding: 12px; user-select: none; font-size: 13px; }
+.dp-main { display: flex; gap: 12px; }
+.dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.dp-head b { font-size: 14px; }
+.dp-nav { border: 0; background: none; font-size: 20px; line-height: 1; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+.dp-nav:hover { background: var(--accent-soft); }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 34px); gap: 2px; }
+.dp-w { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0; }
+.dp-d, .dp-t { border: 0; background: none; font: inherit; color: var(--ink); height: 32px; border-radius: 6px; cursor: pointer; }
+.dp-d:hover, .dp-t:hover { background: var(--accent-soft); }
+.dp-d.out { color: #b0b6c0; }
+.dp-d.today { box-shadow: inset 0 0 0 1px var(--accent); }
+.dp-d.on, .dp-t.on { background: var(--accent); color: #fff; font-weight: 600; }
+.dp-time { display: flex; gap: 4px; border-left: 1px solid var(--line); padding-left: 10px; }
+.dp-col { display: flex; flex-direction: column; width: 48px; height: 262px; overflow-y: auto; scrollbar-width: thin; }
+.dp-t { flex: 0 0 32px; }
+.dp-foot { display: flex; align-items: center; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.dp-foot .btn { margin-left: auto; padding: 6px 18px; }
+
 
 body { background: var(--bg); }
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; flex-wrap: wrap; }
@@ -1029,6 +1054,76 @@ function startEditor(boot) {
       requestAnimationFrame(() => { tick = false; if (document.getElementById("nav")) markHere(); });
     }, { passive: true });
   }
+
+  // ---------- свой календарь с кнопкой «ОК» (системный браузерный не даёт добавить кнопки) ----------
+  const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  const pad = (n) => String(n).padStart(2, "0");
+  let picker = null;
+  function closePicker() { if (picker) { picker.el.remove(); picker = null; } }
+  function openPicker(inp) {
+    closePicker();
+    const withTime = inp.type === "datetime-local";
+    let m = (inp.value || "").match(/^(\d{4})-(\d\d)-(\d\d)(?:T(\d\d):(\d\d))?/);
+    const auto = !m && (inp.placeholder || "").match(/(\d\d)\.(\d\d)\.(\d{4})(?:\s+(\d\d):(\d\d))?/);  // пустое поле с «авто: …» — открыть на нём
+    if (auto) m = [null, auto[3], auto[2], auto[1], auto[4], auto[5]];
+    const now = new Date();
+    const cur = m ? { y: +m[1], mo: +m[2] - 1, d: +m[3], hh: +(m[4] || 0), mm: +(m[5] || 0) }
+      : { y: now.getFullYear(), mo: now.getMonth(), d: null, hh: now.getHours(), mm: 0 };
+    const view = { y: cur.y, mo: cur.mo };
+    const el = h("div", { class: "dp", onmousedown: (e) => e.preventDefault() });
+    const apply = (val) => {
+      inp.value = val;
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
+      closePicker();
+    };
+    const draw = () => {
+      const first = new Date(view.y, view.mo, 1), shift = (first.getDay() + 6) % 7;
+      const start = new Date(view.y, view.mo, 1 - shift);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const days = [];
+      for (let i = 0; i < 42; i++) {
+        const dt = new Date(start); dt.setDate(start.getDate() + i);
+        const inMonth = dt.getMonth() === view.mo;
+        const sel = cur.d && dt.getFullYear() === cur.y && dt.getMonth() === cur.mo && dt.getDate() === cur.d;
+        days.push(h("button", { type: "button", class: "dp-d" + (inMonth ? "" : " out") + (sel ? " on" : "") + (+dt === +today ? " today" : ""),
+          onclick: () => { cur.y = dt.getFullYear(); cur.mo = dt.getMonth(); cur.d = dt.getDate(); view.y = cur.y; view.mo = cur.mo; draw(); } }, dt.getDate()));
+      }
+      const col = (n, key) => h("div", { class: "dp-col" }, Array.from({ length: n }, (_, i) =>
+        h("button", { type: "button", class: "dp-t" + (cur[key] === i ? " on" : ""), onclick: () => { cur[key] = i; draw(); } }, pad(i))));
+      const value = () => cur.d ? `${cur.y}-${pad(cur.mo + 1)}-${pad(cur.d)}` + (withTime ? `T${pad(cur.hh)}:${pad(cur.mm)}` : "") : "";
+      el.replaceChildren(
+        h("div", { class: "dp-main" },
+          h("div", { class: "dp-cal" },
+            h("div", { class: "dp-head" },
+              h("button", { type: "button", class: "dp-nav", onclick: () => { view.mo--; if (view.mo < 0) { view.mo = 11; view.y--; } draw(); } }, "‹"),
+              h("b", {}, `${MONTHS[view.mo]} ${view.y}`),
+              h("button", { type: "button", class: "dp-nav", onclick: () => { view.mo++; if (view.mo > 11) { view.mo = 0; view.y++; } draw(); } }, "›")),
+            h("div", { class: "dp-grid" }, ...["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((x) => h("span", { class: "dp-w" }, x)), ...days)),
+          withTime ? h("div", { class: "dp-time" }, col(24, "hh"), col(60, "mm")) : null),
+        h("div", { class: "dp-foot" },
+          h("button", { type: "button", class: "link", onclick: () => apply("") }, "Очистить"),
+          h("button", { type: "button", class: "link", onclick: () => {
+            const n = new Date(); cur.y = n.getFullYear(); cur.mo = n.getMonth(); cur.d = n.getDate();
+            if (withTime) { cur.hh = n.getHours(); cur.mm = n.getMinutes(); }
+            view.y = cur.y; view.mo = cur.mo; draw(); } }, withTime ? "Сейчас" : "Сегодня"),
+          h("button", { type: "button", class: "btn primary sm", disabled: !cur.d, onclick: () => apply(value()) }, "ОК")));
+      el.querySelectorAll(".dp-col").forEach((c) => { const on = c.querySelector(".on"); if (on) c.scrollTop = on.offsetTop - c.clientHeight / 2 + on.clientHeight / 2; });
+    };
+    document.body.append(el);
+    draw();
+    const r = inp.getBoundingClientRect();
+    const top = r.bottom + window.scrollY + 4, room = window.innerHeight - r.bottom;
+    el.style.left = Math.max(8, Math.min(r.left + window.scrollX, document.documentElement.clientWidth - el.offsetWidth - 8)) + "px";
+    el.style.top = (room < el.offsetHeight + 12 && r.top > el.offsetHeight ? r.top + window.scrollY - el.offsetHeight - 4 : top) + "px";
+    picker = { el, inp };
+  }
+  document.addEventListener("mousedown", (e) => {
+    const inp = e.target.closest && e.target.closest('input[type="date"], input[type="datetime-local"]');
+    if (inp && !inp.disabled) { if (!picker || picker.inp !== inp) openPicker(inp); return; }
+    if (picker && !picker.el.contains(e.target)) closePicker();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePicker(); });
 
   initOrder();
   render();
