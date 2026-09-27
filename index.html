@@ -383,6 +383,12 @@ input.dt-input { cursor: pointer; padding-right: 30px;
 .badge { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 9px; background: var(--err); color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
 .login-alt .btn { flex: 1 1 auto; text-align: center; }
 .login-alt a.small { white-space: nowrap; }
+/* карточки входа/регистрации: содержимое не шире карточки */
+.login { grid-template-columns: minmax(0, 1fr); }
+.narrow { max-width: 420px; }
+.login-alt { flex-wrap: wrap; }
+.login-alt .btn { flex: 1 1 100%; }
+.login-alt a.small { flex: 1 1 100%; text-align: center; }
 
 
 body { background: var(--bg); }
@@ -1365,7 +1371,7 @@ function stateFor(w) {
     const v = g(d, f.path, i);
     const base = { path: f.path, idx: i, section: s.id, label: f.label, tier: f.tier };
     const req = f.tier === "main" && !f.optional && !["org_card", "party_ref"].includes(f.type);
-    if (req) { total++; if (!isEmptyV(v)) filled++; }
+    if (req && f.default === undefined) { total++; if (!isEmptyV(v)) filled++; }  // выборы с готовым значением не считаем
     if (isEmptyV(v) || (v === false && f.type !== "checkbox")) { if (req) problems.push({ ...base, kind: "missing", message: "Не заполнено" }); continue; }
     const m = checkValue(f, v); if (m) problems.push({ ...base, kind: "invalid", message: m });
   }
